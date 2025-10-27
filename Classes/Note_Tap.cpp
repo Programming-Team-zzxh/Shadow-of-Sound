@@ -3,23 +3,23 @@
 #include <cocos/editor-support/cocostudio/SimpleAudioEngine.h>
 using namespace CocosDenshion;
 
-extern int Note_strack[4];//4Ìõ¹ìµÀ
+extern int Note_strack[4];//4æ¡è½¨é“
 extern bool Play_TimeStop;
 
 Note::Note(int x, int y, float speed)
 {
-	Note_x = x;//Track¹ìµÀ
-	Note_y = y;//Òô·ûÖÖÀà
-	Note_speed = speed;//ËÙ¶È
+	Note_x = x;//Trackè½¨é“
+	Note_y = y;//éŸ³ç¬¦ç§ç±»
+	Note_speed = speed;//é€Ÿåº¦
 }
 
 void Note::Note_down()
 {
 
 	//auto moveTo = MoveTo::create(2.0f, Vec3(250, 0, 1));
-	//Sequence¶¯×÷°´Ë³ĞòÖ´ĞĞ£¬CallFunc»Øµ÷º¯Êı£ºÒÆ¶¯¶¯×÷Íê³Éºó½áÊø
+	//SequenceåŠ¨ä½œæŒ‰é¡ºåºæ‰§è¡Œï¼ŒCallFuncå›è°ƒå‡½æ•°ï¼šç§»åŠ¨åŠ¨ä½œå®Œæˆåç»“æŸ
 	//this->runAction(Sequence::create(moveTo, CallFunc::create(CC_CALLBACK_0(Note::Note_end, this)), NULL));
-	//Ôö¼ÓÒ»¸ö¶¨Ê±Æ÷£¬¸üĞÂ×´Ì¬
+	//å¢åŠ ä¸€ä¸ªå®šæ—¶å™¨ï¼Œæ›´æ–°çŠ¶æ€
 	this->schedule(CC_SCHEDULE_SELECTOR(Note::Note_update));
 
 }
@@ -28,8 +28,8 @@ void Note::Note_end()
 {
 
 	this->removeFromParentAndCleanup(true);
-	//µ÷ÓÃremoveÓëparent·ÖÀë£¬²¢ÇÒclear×Ô¼º
-	//Èç¹ûÖ±½ÓdeleteµÄ»°£¬»á±¨´íÒªÉ¾³ıµÄ¶ÔÏóµ±Ç°»¹ÊÇÕıÔÚÔËĞĞ×´Ì¬
+	//è°ƒç”¨removeä¸parentåˆ†ç¦»ï¼Œå¹¶ä¸”clearè‡ªå·±
+	//å¦‚æœç›´æ¥deleteçš„è¯ï¼Œä¼šæŠ¥é”™è¦åˆ é™¤çš„å¯¹è±¡å½“å‰è¿˜æ˜¯æ­£åœ¨è¿è¡ŒçŠ¶æ€
 	delete this;
 
 }
@@ -43,15 +43,15 @@ void Note::Note_update(float dt)
 	this->setPosition(this->getPosition() + Vec2(0, -Note_speed));
 	
 	//PERFECT
-	//ÅĞ¶¨Çø¼ä80+-ms£¬9.6Ö¡
+	//åˆ¤å®šåŒºé—´80+-msï¼Œ9.6å¸§
 	if (this->getPositionY() <= (165 + 9.6 * Speed) && this->getPositionY() >= (165 - 9.6 * Speed))
 	{
 		if ((Note_strack[0] == 1 && Note_x == 1)|| (Note_strack[1] == 1 && Note_x == 2) || 
 			(Note_strack[2] == 1 && Note_x == 3) || (Note_strack[3] == 1 && Note_x == 4))
 		{
-			//²¥·ÅÒôĞ§
+			//æ’­æ”¾éŸ³æ•ˆ
 			SimpleAudioEngine::getInstance()->playEffect("Music file/Tap_Perfect.mp3");
-			//¶¯×÷ÌØĞ§
+			//åŠ¨ä½œç‰¹æ•ˆ
 			auto Note_layer = (LayerColor*)this->getParent();
 			auto Icon = Sprite::create("Note icon/Note_Great.png");
 			Icon->setPosition(Vec2(Director::getInstance()->
@@ -63,15 +63,40 @@ void Note::Note_update(float dt)
 			auto spawn = Spawn::create(fade_1, rota, NULL);
 			auto keep = FadeTo::create(0.5f, 200);
 			auto fade_2 = FadeTo::create(0.8f, 0);
-			//Sequence¶¯×÷°´Ë³ĞòÖ´ĞĞ£¬CallFunc»Øµ÷º¯Êı£ºÒÆ¶¯¶¯×÷Íê³Éºó½áÊø
+			//SequenceåŠ¨ä½œæŒ‰é¡ºåºæ‰§è¡Œï¼ŒCallFuncå›è°ƒå‡½æ•°ï¼šç§»åŠ¨åŠ¨ä½œå®Œæˆåç»“æŸ
 			Icon->runAction(Sequence::create(spawn, keep, fade_2, CallFunc::create(CC_CALLBACK_0(
 				Sprite::removeFromParent, Icon)), NULL));
-			//Á£×ÓÌØĞ§
+			//1. åˆ›å»ºæ–°å›¾ç‰‡ç²¾çµï¼ˆæ›¿æ¢ä¸ºä½ çš„æ–°å›¾ç‰‡è·¯å¾„ï¼‰
+			auto NewIcon = Sprite::create("Note icon/Note_Great1.png"); // æ–°å›¾ç‰‡è·¯å¾„
+			//2. è®¾ç½®ä½ç½®
+			NewIcon->setPosition(Vec2(Director::getInstance()->getVisibleSize().width / 2, 900));
+			//3. åˆå§‹çŠ¶æ€ï¼šé€æ˜ + è½»å¾®ç¼©å°ï¼ˆ0.7å€ï¼Œç”¨äºæ”¾å¤§æ•ˆæœï¼‰
+			NewIcon->setOpacity(0);
+			NewIcon->setScale(0.7f);
+			//4. æ·»åŠ åˆ°å›¾å±‚ï¼ˆzè½´è®¾ä¸º3ï¼Œç¡®ä¿åœ¨ç°æœ‰å…ƒç´ ä¸Šæ–¹ï¼‰
+			Note_layer->addChild(NewIcon, 3);
+			
+			//5. å®šä¹‰æ–°å›¾ç‰‡çš„åŠ¨ç”»ï¼šæ·¡å…¥ + æ”¾å¤§
+			auto newFadeIn = FadeTo::create(0.2f, 255); // 0.2ç§’æ·¡å…¥ï¼ˆæ¯”ç°æœ‰ç¨å¿«ï¼‰
+			auto newScaleUp = ScaleTo::create(0.2f, 1.0f); // 0.2ç§’ä»0.7æ”¾å¤§åˆ°1.0ï¼ˆå¾®å¾®æ”¾å¤§ï¼‰
+			auto newSpawn = Spawn::create(newFadeIn, newScaleUp, NULL); // åŒæ­¥æ‰§è¡Œ
+			//6. ä¿æŒæ˜¾ç¤ºä¸€æ®µæ—¶é—´åæ·¡å‡º
+			auto newKeep = DelayTime::create(0.4f); // ä¿æŒ0.4ç§’
+			auto newFadeOut = FadeTo::create(0.6f, 0); // 0.6ç§’æ·¡å‡º
+			//7. æ‰§è¡ŒåŠ¨ç”»åç§»é™¤
+			NewIcon->runAction(Sequence::create(
+				newSpawn,
+				newKeep,
+				newFadeOut,
+				CallFunc::create(CC_CALLBACK_0(Sprite::removeFromParent, NewIcon)),
+				NULL
+			));
+			//ç²’å­ç‰¹æ•ˆ
 			auto Particle = ParticleSystemQuad::create("Particle/Note_Perfect.plist");
 			Particle->setPosition(Point(Director::getInstance()->
 				getVisibleSize().width / 2 - 380 + X * 152, this->getPositionY() - 8));
 			Note_layer->addChild(Particle, 1);
-			//¼Ó·Ö£¡ÕÒµ½¸¸½ÚµãµÄ¸¸½Úµã£¬Ò²¾ÍÊÇGamePlay
+			//åŠ åˆ†ï¼æ‰¾åˆ°çˆ¶èŠ‚ç‚¹çš„çˆ¶èŠ‚ç‚¹ï¼Œä¹Ÿå°±æ˜¯GamePlay
 			auto PlayFather = ((GamePlay*)(LayerColor*)this->getParent()->getParent());
 			PlayFather->Play_Perfect++;
 			PlayFather->Play_Combo++;
@@ -81,7 +106,7 @@ void Note::Note_update(float dt)
 		}
 	}
 	//GRAET
-	//ÅĞ¶¨Çø¼ä200+-ms£¬24Ö¡
+	//åˆ¤å®šåŒºé—´200+-msï¼Œ24å¸§
 	else if (this->getPositionY() <= (165 + 24 * Speed) && this->getPositionY() >= (165 - 24 * Speed))
 	{
 		if ((Note_strack[0] == 1 && Note_x == 1) || (Note_strack[1] == 1 && Note_x == 2) ||
@@ -121,14 +146,15 @@ void Note::Note_update(float dt)
 		((GamePlay*)(LayerColor*)this->getParent()->getParent())->Play_Pass++;
 		((GamePlay*)(LayerColor*)this->getParent()->getParent())->Play_Combo = 0;
 		this->removeFromParentAndCleanup(true);
-		//µ÷ÓÃremoveÓëparent·ÖÀë£¬²¢ÇÒclear×Ô¼º
-		//Èç¹ûÖ±½ÓdeleteµÄ»°£¬»á±¨´íÒªÉ¾³ıµÄ¶ÔÏóµ±Ç°»¹ÊÇÕıÔÚÔËĞĞ×´Ì¬
+		//è°ƒç”¨removeä¸parentåˆ†ç¦»ï¼Œå¹¶ä¸”clearè‡ªå·±
+		//å¦‚æœç›´æ¥deleteçš„è¯ï¼Œä¼šæŠ¥é”™è¦åˆ é™¤çš„å¯¹è±¡å½“å‰è¿˜æ˜¯æ­£åœ¨è¿è¡ŒçŠ¶æ€
 		delete this;
 	}		
-	//ÔÚ°´ÏÂ°´¼üºóËø¶¨
+	//åœ¨æŒ‰ä¸‹æŒ‰é”®åé”å®š
 	if (Note_strack[X - 1] == 1)
 	{
 		Note_strack[X - 1] = -1;
 	}
+
 
 }
