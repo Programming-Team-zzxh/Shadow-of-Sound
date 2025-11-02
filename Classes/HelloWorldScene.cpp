@@ -27,24 +27,29 @@ bool HelloWorld::init()
     // 2. add a menu item with "X" image, which is clicked to quit the program
     //    you may modify it.
     // add a "close" icon to exit the progress. it's an autorelease object
-    auto SetItem = MenuItemImage::create("Picture/Butt/Set.png","Picture/Butt/Set.png",
-        CC_CALLBACK_1(HelloWorld::gameset, this));//ÉèÖÃ
-    auto StaItem = MenuItemImage::create("Picture/Butt/Statistics.png", "Picture/Butt/Statistics.png",
-        CC_CALLBACK_1(HelloWorld::gamesta, this));//Í³¼Æ
-    auto MyItem = MenuItemImage::create("Picture/Butt/Myself.png", "Picture/Butt/Myself.png",
-        CC_CALLBACK_1(HelloWorld::gamemyself, this));//±¾ÈË
+auto SetItem = MenuItemImage::create("Picture/Butt/Set.png","Picture/Butt/Set.png",
+    CC_CALLBACK_1(HelloWorld::gameset, this));//è®¾ç½®
+auto StaItem = MenuItemImage::create("Picture/Butt/Statistics.png", "Picture/Butt/Statistics.png",
+    CC_CALLBACK_1(HelloWorld::gamesta, this));//ç»Ÿè®¡
+auto MyItem = MenuItemImage::create("Picture/Butt/Myself.png", "Picture/Butt/Myself.png",
+    CC_CALLBACK_1(HelloWorld::gamemyself, this));//æœ¬äºº
+// æ·»åŠ æˆç»©ç»Ÿè®¡æŒ‰é’®
+auto ScoreItem = MenuItemImage::create("Picture/Butt/Score.png", "Picture/Butt/Score.png",
+    CC_CALLBACK_1(HelloWorld::gameScoreStatistics, this));//æˆç»©æŸ¥è¯¢
 
-    SetItem->setAnchorPoint(Vec2(1, 0));
-    SetItem->setPosition(Vec2(visibleSize.width - 10, 10));
-    StaItem->setAnchorPoint(Vec2(1, 0));
-    StaItem->setPosition(Vec2(visibleSize.width - 80, 10));
-    MyItem->setAnchorPoint(Vec2(1, 0));
-    MyItem->setPosition(Vec2(visibleSize.width - 150, 10));
+SetItem->setAnchorPoint(Vec2(1, 0));
+SetItem->setPosition(Vec2(visibleSize.width - 10, 10));
+StaItem->setAnchorPoint(Vec2(1, 0));
+StaItem->setPosition(Vec2(visibleSize.width - 80, 10));
+MyItem->setAnchorPoint(Vec2(1, 0));
+MyItem->setPosition(Vec2(visibleSize.width - 150, 10));
+ScoreItem->setAnchorPoint(Vec2(1, 0));
+ScoreItem->setPosition(Vec2(visibleSize.width - 220, 10)); // æ–°æŒ‰é’®ä½ç½®
 
-    // create menu, it's an autorelease object
-    auto menu = Menu::create(SetItem, StaItem,MyItem, NULL);
-    menu->setPosition(Vec2::ZERO);
-    this->addChild(menu, 1);
+// create menu, it's an autorelease object
+auto menu = Menu::create(SetItem, StaItem, MyItem, ScoreItem, NULL); // æ·»åŠ æ–°æŒ‰é’®
+menu->setPosition(Vec2::ZERO);
+this->addChild(menu, 1);
 
     // add a label shows "Press To Enter"
     // create and initialize a label and blink
@@ -52,7 +57,7 @@ bool HelloWorld::init()
     label->setPosition(Vec2(origin.x + visibleSize.width/2, origin.y + visibleSize.height/4 - 
         label->getContentSize().height));
     this->addChild(label, 1);
-    //´´½¨Ò»¸ö¶¯»­Fade
+    //åˆ›å»ºä¸€ä¸ªåŠ¨ç”»Fade
     auto fade_1 = FadeTo::create(1.0f, 0);
     auto fade_2 = FadeTo::create(1.0f, 255);
     auto blink = Sequence::create(fade_1, fade_2, NULL);
@@ -69,14 +74,14 @@ bool HelloWorld::init()
     // add the sprite as a child to this layer
     this->addChild(sprite, 1);
 
-    //Ô¤¼ÓÔØÒôÐ§
+    //é¢„åŠ è½½éŸ³æ•ˆ
     SimpleAudioEngine::getInstance()->preloadEffect("Music file/Tap_Perfect.mp3");
     SimpleAudioEngine::getInstance()->preloadEffect("Music file/Tap_Good.mp3");
     SimpleAudioEngine::getInstance()->preloadEffect("Music file/Note_One.mp3");
     SimpleAudioEngine::getInstance()->preloadEffect("Music file/Note_Two.mp3");
     SimpleAudioEngine::getInstance()->preloadEffect("Music file/Pick.mp3");
 
-    //Ö÷½çÃæ
+    //ä¸»ç•Œé¢
     auto Main_interface = Sprite::create("Picture/Main interface.png", Rect(0, 0,
         GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)));
     Main_interface->setPosition( Vec2(visibleSize.width / 2, visibleSize.height / 2));
@@ -134,4 +139,5 @@ void HelloWorld::gamemyself(Ref* pSender)
 {
     Scene* scene = GameMyself::createScene();
     Director::getInstance()->pushScene(TransitionFade::create(1.5, scene));
+
 }
