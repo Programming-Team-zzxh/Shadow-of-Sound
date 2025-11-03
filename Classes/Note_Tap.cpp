@@ -169,13 +169,43 @@ void Note::Note_update(float dt)
 	//BAD
 	else if (this->getPositionY() < (165 - 24 * Speed))
 	{
+		// 检查对应轨道是否从未被按下（未击中）
+		bool isHit = (Note_strack[0] == 1 && Note_x == 1) ||
+			(Note_strack[1] == 1 && Note_x == 2) ||
+			(Note_strack[2] == 1 && Note_x == 3) ||
+			(Note_strack[3] == 1 && Note_x == 4);
+
+		if (!isHit)  // 未被击中 → 判定为Miss
+		{
+			auto Note_layer = (LayerColor*)this->getParent();
+
+			// 1. 显示Miss新图标（放大+淡入效果）
+			auto MissIcon = Sprite::create("Note icon/Note_Miss1.png");  // Miss图片路径
+			MissIcon->setPosition(Vec2(Director::getInstance()->getVisibleSize().width / 2, 900));  // 居中显示
+			MissIcon->setOpacity(0);
+			MissIcon->setScale(0.7f);
+			Note_layer->addChild(MissIcon, 3);
+
+			// 2. Miss图标动画（与之前的新图标动画一致）
+			auto fadeIn = FadeTo::create(0.2f, 255);
+			auto scaleUp = ScaleTo::create(0.2f, 1.0f);
+			auto spawn = Spawn::create(fadeIn, scaleUp, nullptr);
+			auto keep = DelayTime::create(0.4f);
+			auto fadeOut = FadeTo::create(0.6f, 0);
+			MissIcon->runAction(Sequence::create(
+				spawn, keep, fadeOut,
+				CallFunc::create(CC_CALLBACK_0(Sprite::removeFromParent, MissIcon)),
+				nullptr
+			));
+		}
+
 		((GamePlay*)(LayerColor*)this->getParent()->getParent())->Play_Pass++;
 		((GamePlay*)(LayerColor*)this->getParent()->getParent())->Play_Combo = 0;
 		this->removeFromParentAndCleanup(true);
 		//调用remove与parent分离，并且clear自己
 		//如果直接delete的话，会报错要删除的对象当前还是正在运行状态
 		delete this;
-	}		
+	}
 	//在按下按键后锁定
 	if (Note_strack[X - 1] == 1)
 	{
