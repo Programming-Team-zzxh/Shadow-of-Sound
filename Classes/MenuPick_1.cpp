@@ -24,6 +24,8 @@ bool MenuPick_1::init()
 	}
 
 	auto visibleSize = Director::getInstance()->getVisibleSize();
+	auto songContainer = Node::create();
+	this->addChild(songContainer, 1, 100); // tag = 100
 
 	//读取Json文件
 	std::string Rec = FileUtils::getInstance()->getStringFromFile("Record/GameRecord.json");
@@ -112,7 +114,7 @@ bool MenuPick_1::init()
 	MenuPick4->setPosition(Vec2(300, 600));
 	MenuPick5->setPosition(Vec2(300, 500));
 	MenuPick6->setPosition(Vec2(300, 400));
-	this->addChild(Menu, 1, 1);
+	songContainer->addChild(Menu, 1, 1);
 
 	/*歌曲的背景
 	auto BackGround = Sprite::create("Cover/BackGround.png");
@@ -190,9 +192,9 @@ bool MenuPick_1::init()
 
 	//箭头
 	auto Pick_Arrow = Sprite::create("Cover/Arrow.png");
-	this->addChild(Pick_Arrow, 3, 8);
 	Pick_Arrow->setAnchorPoint(Vec2(0, 0.5));
 	Pick_Arrow->setPosition(MenuPick1->getPosition() + Vec2(215, 0));
+	songContainer->addChild(Pick_Arrow, 2, 8);
 
 	//进入按钮,独立于其他菜单项
 	auto Enter = MenuItemImage::create("Cover/Enter.png", "Cover/Enter2.png", "Cover/Enter.png",
@@ -224,6 +226,29 @@ bool MenuPick_1::init()
 		}
 	};
 	_eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
+
+	auto scrollListener = EventListenerMouse::create();
+	scrollListener->onMouseScroll = [=](Event* event) {
+		EventMouse* e = (EventMouse*)event;
+		float scrollY = e->getScrollY();
+
+		auto container = this->getChildByTag(100);  // 容器节点
+		if (!container) return;
+
+		float scrollSpeed = 40.0f;
+		float deltaY = scrollY * scrollSpeed;
+
+		Vec2 pos = container->getPosition();
+		pos.y += deltaY;
+
+		// 限制滚动范围（边界防溢出）
+		float minY = -400.0f;
+		float maxY = 400.0f;
+		pos.y = clampf(pos.y, minY, maxY);
+
+		container->setPosition(pos);
+		};
+	_eventDispatcher->addEventListenerWithSceneGraphPriority(scrollListener, this);
 
 	return true;
 }
