@@ -61,3 +61,23 @@ void ScoreSystem::addSongScore(const std::string& songName, const std::string& d
     sortScores();
     saveToFile();
 }
+
+float ScoreSystem::calculateTop20AverageWithZeroPadding() {
+    int totalCount = 20; // 固定计算20首
+    float total = 0.0f;
+
+    // 计算实际存在的歌曲分数
+    int actualCount = std::min(totalCount, static_cast<int>(m_allScores.size()));
+    for (int i = 0; i < actualCount; ++i) {
+        total += m_allScores[i].calculatedScore;
+    }
+
+    // 不足20首时，用0补足
+    for (int i = actualCount; i < totalCount; ++i) {
+        total += 0.0f; // 补0
+    }
+
+    return total / totalCount;
+}
+
+
