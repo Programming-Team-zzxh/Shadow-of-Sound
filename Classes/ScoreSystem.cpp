@@ -110,3 +110,76 @@ std::string ScoreSystem::getTop20Statistics() {
     return result;
 }
 
+void ScoreSystem::saveToFile() {
+    rapidjson::Document document;
+    document.SetObject();
+    rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
+
+    rapidjson::Value scoresArray(rapidjson::kArrayType);
+
+    for (const auto& score : m_allScores) {
+        rapidjson::Value scoreObject(rapidjson::kObjectType);
+
+        scoreObject.AddMember("songName",
+            rapidjson::Value(score.songName.c_str(), allocator).Move(),
+            allocator);
+        scoreObject.AddMember("difficulty",
+            rapidjson::Value(score.difficulty.c_str(), allocator).Move(),
+            allocator);
+        scoreObject.AddMember("rawScore", score.rawScore, allocator);
+        scoreObject.AddMember("maxPossibleScore", score.maxPossibleScore, allocator);
+        scoreObject.AddMember("difficultyLevel", score.difficultyLevel, allocator);
+        scoreObject.AddMember("calculatedScore", score.calculatedScore, allocator);
+        scoreObject.AddMember("playTime", static_cast<int64_t>(score.playTime), allocator);
+
+        scoresArray.PushBack(scoreObject, allocator);
+    }
+
+    document.AddMember("scores", scoresArray, allocator);
+
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    document.Accept(writer);
+
+    FILE* file = fopen(getScoreFilePath().c_str(), "wb");
+    if (file) {
+        fputs(buffer.GetString(), file);
+        fclose(file);
+    }
+}
+
+void ScoreSystem::loadFromFile() {
+    m_allScores.clear();
+
+    std::string filePath = getScoreFilePath();
+    if (!FileUtils::getInstance()->isFileExist(filePath)) {
+        return;
+    }
+
+    std::string content = FileUtils::getInstance()->getStringFromFile(filePath);
+    if (content.empty()) {
+        return;
+    }
+
+    rapidjson::Document document;
+    document.Parse(content.c_str());
+
+    if (document.HasParseError() || !document.IsObject()) {
+        return;
+    }
+
+    if (!document.HasMember("scores") || !document["scores"].IsArray()) {
+        return;
+    }
+
+    const rapidjson::Value& scoresArray = document["scores"];
+    for (rapidjson::SizeType i = 0; i < scoresArray.Size(); i++) {
+        const rapidjson::Value& scoreObject = scoresArray[i];
+
+        if (!scoreObject.IsObject() ||
+            !scoreObject.HasMember("songName") || !scoreObject["songName"].IsString() ||
+            !scoreObject.HasMember("difficulty") || !scoreObject["difficulty"].IsString() ||
+            !scoreObject.HasMember("rawScore") || !scoreObject["rawScore"].IsInt() ||
+            !scoreObject.HasMember("difficultyLevel") || !scoreObject["difficultyLevel"].IsInt()) {
+            continue;
+        }
