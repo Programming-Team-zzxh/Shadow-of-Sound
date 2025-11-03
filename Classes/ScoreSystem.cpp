@@ -183,3 +183,36 @@ void ScoreSystem::loadFromFile() {
             !scoreObject.HasMember("difficultyLevel") || !scoreObject["difficultyLevel"].IsInt()) {
             continue;
         }
+
+        SongScore score;
+        score.songName = scoreObject["songName"].GetString();
+        score.difficulty = scoreObject["difficulty"].GetString();
+        score.rawScore = scoreObject["rawScore"].GetInt();
+        score.difficultyLevel = scoreObject["difficultyLevel"].GetInt();
+
+        if (scoreObject.HasMember("maxPossibleScore") && scoreObject["maxPossibleScore"].IsInt()) {
+            score.maxPossibleScore = scoreObject["maxPossibleScore"].GetInt();
+        }
+
+        if (scoreObject.HasMember("calculatedScore") && scoreObject["calculatedScore"].IsFloat()) {
+            score.calculatedScore = scoreObject["calculatedScore"].GetFloat();
+        }
+        else {
+            score.calculateScore(); // 重新计算
+        }
+
+        if (scoreObject.HasMember("playTime") && scoreObject["playTime"].IsInt64()) {
+            score.playTime = static_cast<time_t>(scoreObject["playTime"].GetInt64());
+        }
+
+        m_allScores.push_back(score);
+    }
+
+    sortScores();
+}
+
+void ScoreSystem::clearAllScores() {
+    m_allScores.clear();
+    // 删除文件
+    remove(getScoreFilePath().c_str());
+}
