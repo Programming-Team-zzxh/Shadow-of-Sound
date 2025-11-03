@@ -214,10 +214,18 @@ songContainer->addChild(Pick_Arrow, 2, 8);
 	};
 	_eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
 
+	//鼠标滚轮事件监听
 	auto scrollListener = EventListenerMouse::create();
 	scrollListener->onMouseScroll = [=](Event* event) {
 		EventMouse* e = (EventMouse*)event;
 		float scrollY = e->getScrollY();
+
+		//只在屏幕左四分之一区域滚动
+		Vec2 mousePos = e->getLocationInView();
+		auto visibleSize = Director::getInstance()->getVisibleSize();
+
+		if (mousePos.x > visibleSize.width / 4)
+			return;  // 鼠标不在选歌区域，不滚动
 
 		auto container = this->getChildByTag(100);  // 容器节点
 		if (!container) return;
