@@ -166,8 +166,44 @@ void Note::Note_update(float dt)
 			delete this;
 		}
 	}
-	//BAD
-	else if (this->getPositionY() < (165 - 24 * Speed))
+	//新增：BAD判定（不算连击、0分）
+		//判定区间：低于Great下限（165-24*Speed），高于Miss临界值（165-30*Speed）
+	else if (this->getPositionY() < (165 - 24 * Speed) && this->getPositionY() >= (165 - 30 * Speed))
+	{
+		if ((Note_strack[0] == 1 && Note_x == 1) || (Note_strack[1] == 1 && Note_x == 2) ||
+			(Note_strack[2] == 1 && Note_x == 3) || (Note_strack[3] == 1 && Note_x == 4))
+		{
+			auto Note_layer = (LayerColor*)this->getParent();
+			//Bad新图标（居中显示）
+			auto NewIcon = Sprite::create("Note icon/Note_Bad1.png"); // Bad新图片路径
+			NewIcon->setPosition(Vec2(Director::getInstance()->getVisibleSize().width / 2, 900));
+			NewIcon->setOpacity(0);
+			NewIcon->setScale(0.7f);
+			Note_layer->addChild(NewIcon, 3);
+
+			//Bad图标动画（与其他判定保持一致）
+			auto newFadeIn = FadeTo::create(0.2f, 255);
+			auto newScaleUp = ScaleTo::create(0.2f, 1.0f);
+			auto newSpawn = Spawn::create(newFadeIn, newScaleUp, NULL);
+			auto newKeep = DelayTime::create(0.4f);
+			auto newFadeOut = FadeTo::create(0.6f, 0);
+			NewIcon->runAction(Sequence::create(
+				newSpawn, newKeep, newFadeOut,
+				CallFunc::create(CC_CALLBACK_0(Sprite::removeFromParent, NewIcon)),
+				NULL
+			));
+
+			//Bad数据更新：算次数、0分、重置连击
+			auto PlayFather = ((GamePlay*)(LayerColor*)this->getParent()->getParent());
+			PlayFather->Play_Bad++; // 统计Bad次数
+			PlayFather->Play_Combo = 0; // 不算连击，重置连击数
+			// Play_Score 不累加（0分），无需额外代码
+			this->removeFromParentAndCleanup(true);
+			delete this;
+		}
+		}
+		//MISS（未击中或超出Bad判定下限）
+	else if (this->getPositionY() < (165 - 30 * Speed)) // 与Bad判定下限衔接)
 	{
 		// 检查对应轨道是否从未被按下（未击中）
 		bool isHit = (Note_strack[0] == 1 && Note_x == 1) ||
@@ -214,4 +250,5 @@ void Note::Note_update(float dt)
 
 
 }
+
 
