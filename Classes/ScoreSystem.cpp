@@ -80,4 +80,33 @@ float ScoreSystem::calculateTop20AverageWithZeroPadding() {
     return total / totalCount;
 }
 
+std::vector<SongScore> ScoreSystem::getTopScores(int count) {
+    if (m_allScores.empty()) {
+        return std::vector<SongScore>();
+    }
+
+    int actualCount = std::min(count, static_cast<int>(m_allScores.size()));
+    return std::vector<SongScore>(m_allScores.begin(), m_allScores.begin() + actualCount);
+}
+
+void ScoreSystem::sortScores() {
+    std::sort(m_allScores.begin(), m_allScores.end());
+}
+
+std::string ScoreSystem::getScoreFilePath() {
+    return FileUtils::getInstance()->getWritablePath() + "SongScores.json";
+}
+
+std::string ScoreSystem::getTop20Statistics() {
+    std::string result;
+    char buffer[256];
+
+    int actualCount = std::min(20, static_cast<int>(m_allScores.size()));
+    int zeroPaddingCount = 20 - actualCount;
+
+    sprintf(buffer, "实际游玩: %d首, 补零: %d首", actualCount, zeroPaddingCount);
+    result = buffer;
+
+    return result;
+}
 
