@@ -128,6 +128,32 @@ void Note::Note_update(float dt)
 			Icon->runAction(Sequence::create(spawn, keep, fade_2, CallFunc::create(CC_CALLBACK_0(
 				Sprite::removeFromParent, Icon)), NULL));
 
+			//1. 创建新图片精灵（替换为你的新图片路径）
+			auto NewIcon = Sprite::create("Note icon/Note_Good1.png"); // 新图片路径
+			//2. 设置位置
+			NewIcon->setPosition(Vec2(Director::getInstance()->getVisibleSize().width / 2, 900));
+			//3. 初始状态：透明 + 轻微缩小（0.7倍，用于放大效果）
+			NewIcon->setOpacity(0);
+			NewIcon->setScale(0.7f);
+			//4. 添加到图层（z轴设为3，确保在现有元素上方）
+			Note_layer->addChild(NewIcon, 3);
+
+			//5. 定义新图片的动画：淡入 + 放大
+			auto newFadeIn = FadeTo::create(0.2f, 255); // 0.2秒淡入（比现有稍快）
+			auto newScaleUp = ScaleTo::create(0.2f, 1.0f); // 0.2秒从0.7放大到1.0（微微放大）
+			auto newSpawn = Spawn::create(newFadeIn, newScaleUp, NULL); // 同步执行
+			//6. 保持显示一段时间后淡出
+			auto newKeep = DelayTime::create(0.4f); // 保持0.4秒
+			auto newFadeOut = FadeTo::create(0.6f, 0); // 0.6秒淡出
+			//7. 执行动画后移除
+			NewIcon->runAction(Sequence::create(
+				newSpawn,
+				newKeep,
+				newFadeOut,
+				CallFunc::create(CC_CALLBACK_0(Sprite::removeFromParent, NewIcon)),
+				NULL
+			));
+
 			auto Particle = ParticleSystemQuad::create("Particle/Note_Good.plist");
 			Particle->setPosition(Point(Director::getInstance()->
 				getVisibleSize().width / 2 - 380 + X * 152, this->getPositionY() - 8));
@@ -135,7 +161,7 @@ void Note::Note_update(float dt)
 			auto PlayFather = ((GamePlay*)(LayerColor*)this->getParent()->getParent());
 			PlayFather->Play_Good++;
 			PlayFather->Play_Combo++;
-			PlayFather->Play_Score = PlayFather->Play_Score + PlayFather->Play_GetScore*0.65;
+			PlayFather->Play_Score = PlayFather->Play_Score + PlayFather->Play_GetScore * 0.65;
 			this->removeFromParentAndCleanup(true);
 			delete this;
 		}
@@ -158,3 +184,4 @@ void Note::Note_update(float dt)
 
 
 }
+
