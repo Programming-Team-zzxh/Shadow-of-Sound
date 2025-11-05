@@ -22,6 +22,8 @@ public:
 
     void menupick_3(Ref* pSender);
 
+    void menupick_custom(Ref* pSender);
+
     CREATE_FUNC(GamePick);
 };
 
