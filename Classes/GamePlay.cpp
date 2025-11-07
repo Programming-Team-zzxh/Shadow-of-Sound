@@ -79,19 +79,52 @@ bool GamePlay::init()
 	LightingR2->setOpacity(0);
 	Notelayer->addChild(LightingR2, 2);
 
-	//开局显示按键
-	auto BackKey = Sprite::create("Note icon/Key.png");
-	BackKey->setAnchorPoint(Vec2(0.5, 0));
-	BackKey->setPosition(Vec2(visibleSize.width / 2, 0));
-	BackKey->setOpacity(0);
-	Notelayer->addChild(BackKey, 2);
-	auto Delay_1 = DelayTime::create(1.0f);
-	auto Fade_1 = FadeTo::create(1.0f, 0);
-	auto Delay_2 = DelayTime::create(3.0f);
-	auto Fade_2 = FadeTo::create(1.0f, 255);
-	auto Disappear = Sequence::create(Delay_1, Fade_2, Delay_2, Fade_1, NULL);
-	BackKey->runAction(Disappear);
+	// Display currently bound keys at the start
+	auto keyConfig = KeyConfig::getInstance();
 
+	// Create key display container
+	auto keyDisplayLayer = Layer::create();
+	keyDisplayLayer->setPosition(Vec2(visibleSize.width / 2 - 303.0f, 0.0f));
+	keyDisplayLayer->setOpacity(0);
+	Notelayer->addChild(keyDisplayLayer, 2);
+
+	//4 track positions (aligned with note tracks)
+	float trackPositions[4] = { 75.0f, 227.0f, 379.0f, 531.0f };
+
+	// Create key displays for each track
+	for (int i = 0; i < 4; i++) {
+		// Key background
+		auto drawNode = DrawNode::create();
+		drawNode->drawSolidCircle(Vec2(0.0f, 0.0f), 20.0f, 0, 16, Color4F(0.1f, 0.1f, 0.1f, 0.8f));
+		drawNode->drawCircle(Vec2(0.0f, 0.0f), 20.0f, 0, 16, false, Color4F(1.0f, 1.0f, 1.0f, 0.5f));
+
+		auto keyBg = Sprite::create();
+		keyBg->addChild(drawNode);
+		keyBg->setPosition(Vec2(trackPositions[i], 40.0f));
+		keyDisplayLayer->addChild(keyBg);
+
+		// Key text
+		auto keyCode = keyConfig->getKeyForTrack(i);
+		std::string keyName = KeyConfig::getKeyDisplayName(keyCode);
+		auto keyLabel = Label::createWithTTF(keyName, "fonts/arial.ttf", 18);
+		keyLabel->setPosition(Vec2(trackPositions[i], 40.0f));
+		keyLabel->setTextColor(Color4B::WHITE);
+		keyLabel->enableOutline(Color4B::BLACK, 2);
+		keyDisplayLayer->addChild(keyLabel);
+	}
+
+	// Animation effects
+	auto delay1 = DelayTime::create(1.0f);
+	auto fadeIn = FadeIn::create(0.8f);
+	auto delay2 = DelayTime::create(3.0f);
+	auto fadeOut = FadeOut::create(0.8f);
+	auto remove = CallFunc::create([keyDisplayLayer]() {
+		keyDisplayLayer->removeFromParent();
+		});
+
+	auto sequence = Sequence::create(delay1, fadeIn, delay2, fadeOut, remove, nullptr);
+	keyDisplayLayer->runAction(sequence);
+	
 	//Combo计数
 	auto Combo = Label::createWithTTF("COMBO", "fonts/arial.ttf", 48);
 	Combo->setTextColor(Color4B(139,215,250,255));
@@ -578,3 +611,4 @@ void GamePlay::backmeun(Ref* pSender)
 bool GamePlay::isKeyPressed(EventKeyboard::KeyCode keyCode) {
     return KeyConfig::isKeyPressed(keyCode);
 }//Bound keys
+
