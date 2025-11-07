@@ -60,23 +60,27 @@ bool GamePlay::init()
 	//灯光
 	auto LightingL1 = Sprite::create("Note icon/Left_1.png");
 	LightingL1->setAnchorPoint(Vec2(0, 0));
-	LightingL1->setPosition(Vec2(visibleSize.width / 2-303, 0));
+	LightingL1->setPosition(Vec2(visibleSize.width / 2 - 303, 0));
 	LightingL1->setOpacity(0);
+	LightingL1->setName("LightingL1");
 	Notelayer->addChild(LightingL1, 2);
 	auto LightingL2 = Sprite::create("Note icon/Left_2.png");
 	LightingL2->setAnchorPoint(Vec2(0, 0));
 	LightingL2->setPosition(Vec2(visibleSize.width / 2 - 151, 0));
 	LightingL2->setOpacity(0);
+	LightingL2->setName("LightingL2");
 	Notelayer->addChild(LightingL2, 2);
 	auto LightingR1 = Sprite::create("Note icon/Right_1.png");
 	LightingR1->setAnchorPoint(Vec2(0, 0));
 	LightingR1->setPosition(Vec2(visibleSize.width / 2 + 153, 0));
 	LightingR1->setOpacity(0);
+	LightingR1->setName("LightingR1");
 	Notelayer->addChild(LightingR1, 2);
 	auto LightingR2 = Sprite::create("Note icon/Right_2.png");
 	LightingR2->setAnchorPoint(Vec2(0, 0));
 	LightingR2->setPosition(Vec2(visibleSize.width / 2 + 1, 0));
 	LightingR2->setOpacity(0);
+	LightingR2->setName("LightingR2");
 	Notelayer->addChild(LightingR2, 2);
 
 	// Display currently bound keys at the start
@@ -334,6 +338,32 @@ void GamePlay::Update_count(float dt)
 	else if ((int)(Game_file.front()*120) == Game_time)//生成时间
 	{
 		CreateNote(Game_time);
+	}
+}
+
+	// Key detection section
+	auto keyConfig = KeyConfig::getInstance();
+
+	// Use configured key detection
+	if (isKeyPressed(keyConfig->getKeyForTrack(0)) && Note_strack[0] != -1) {
+		Note_strack[0] = 1;
+		auto LightingL1 = (Sprite*)this->getChildByTag(5)->getChildByName("LightingL1");
+		if (LightingL1) LightingL1->setOpacity(255);
+	}
+	if (isKeyPressed(keyConfig->getKeyForTrack(1)) && Note_strack[1] != -1) {
+		Note_strack[1] = 1;
+		auto LightingL2 = (Sprite*)this->getChildByTag(5)->getChildByName("LightingL2");
+		if (LightingL2) LightingL2->setOpacity(255);
+	}
+	if (isKeyPressed(keyConfig->getKeyForTrack(2)) && Note_strack[2] != -1) {
+		Note_strack[2] = 1;
+		auto LightingR2 = (Sprite*)this->getChildByTag(5)->getChildByName("LightingR2");
+		if (LightingR2) LightingR2->setOpacity(255);
+	}
+	if (isKeyPressed(keyConfig->getKeyForTrack(3)) && Note_strack[3] != -1) {
+		Note_strack[3] = 1;
+		auto LightingR1 = (Sprite*)this->getChildByTag(5)->getChildByName("LightingR1");
+		if (LightingR1) LightingR1->setOpacity(255);
 	}
 }
 
@@ -611,4 +641,5 @@ void GamePlay::backmeun(Ref* pSender)
 bool GamePlay::isKeyPressed(EventKeyboard::KeyCode keyCode) {
     return KeyConfig::isKeyPressed(keyCode);
 }//Bound keys
+
 
