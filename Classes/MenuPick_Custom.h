@@ -8,15 +8,18 @@
 class CustomSongButton : public cocos2d::MenuItemSprite
 {
 public:
-    static CustomSongButton* create(const std::string& songName, int index);
-    bool initWithSong(const std::string& songName, int index);
+    // 添加回调函数类型
+    typedef std::function<void(int, const std::string&)> ButtonClickCallback;
+    static CustomSongButton* create(const std::string& songName, int index, ButtonClickCallback callback);
+    bool initWithSong(const std::string& songName, int index, ButtonClickCallback callback);
 
-    virtual void selected() override;
-    virtual void unselected() override;
+    // 添加点击处理方法
+    void onButtonClicked(Ref* sender);
 
 private:
     std::string _songName;
     int _index;
+    ButtonClickCallback _callback; // 存储回调函数
 };
 
 class MenuPick_Custom : public cocos2d::Scene
@@ -33,6 +36,13 @@ private:
     std::vector<std::string> getCustomSongs();
 
     CREATE_FUNC(MenuPick_Custom);
+
+    void onSongButtonClicked(int index, const std::string& songName);
+    void updateSongCover(const std::string& songName);
+    void updateArrowPosition(int index);
+
+    int _currentSelectedIndex;
+    std::string _currentSelectedSong;
 };
 
 #endif // __MENU_PICK_CUSTOM_H__

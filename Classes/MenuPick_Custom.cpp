@@ -32,7 +32,7 @@ bool MenuPick_Custom::init()
     auto Backlayer = LayerColor::create(Color4B::BLACK);
     this->addChild(Backlayer, 0, 0);
 
-    auto Main_interface = Sprite::create("Cover/BackGround.png");
+    auto Main_interface = Sprite::create("Cover/esm.png");
     Main_interface->setOpacity(100);
     Main_interface->setPosition(Vec2(visibleSize.width / 2, visibleSize.height / 2));
     Backlayer->addChild(Main_interface, 1);
@@ -50,7 +50,8 @@ bool MenuPick_Custom::init()
     for (int i = 0; i < songList.size(); i++)
     {
         // 创建按钮
-        auto button = CustomSongButton::create(songList[i], i + 1);
+        auto button = CustomSongButton::create(songList[i], i + 1,
+            CC_CALLBACK_2(MenuPick_Custom::onSongButtonClicked, this));
         if (button)
         {
             button->setPosition(Vec2(300, startY - i * spacing));
@@ -160,6 +161,15 @@ bool MenuPick_Custom::init()
         };
     _eventDispatcher->addEventListenerWithSceneGraphPriority(scrollListener, this);
 
+    // 在 init() 方法最后添加
+    if (!songList.empty()) {
+        // 默认选中第一个歌曲
+        _currentSelectedIndex = 1;
+        _currentSelectedSong = songList[0];
+        updateSongCover(_currentSelectedSong);
+        updateArrowPosition(_currentSelectedIndex);
+    }
+
     return true;
 }
 
@@ -219,10 +229,10 @@ void MenuPick_Custom::backmeun()
 }
 
 // CustomSongButton 类的实现
-CustomSongButton* CustomSongButton::create(const std::string& songName, int index)
+CustomSongButton* CustomSongButton::create(const std::string& songName, int index,ButtonClickCallback callback)
 {
     CustomSongButton* button = new (std::nothrow) CustomSongButton();
-    if (button && button->initWithSong(songName, index))
+    if (button && button->initWithSong(songName,index,callback))
     {
         button->autorelease();
         return button;
@@ -231,7 +241,7 @@ CustomSongButton* CustomSongButton::create(const std::string& songName, int inde
     return nullptr;
 }
 
-bool CustomSongButton::initWithSong(const std::string& songName, int index)
+bool CustomSongButton::initWithSong(const std::string& songName, int index, ButtonClickCallback callback)
 {
     // 创建白色背景精灵
     auto whiteBg = Sprite::create("Cover/White.png");
@@ -256,20 +266,74 @@ bool CustomSongButton::initWithSong(const std::string& songName, int index)
 
     _songName = songName;
     _index = index;
+    _callback = callback;
+
+    // 设置点击回调
+    this->setCallback(CC_CALLBACK_1(CustomSongButton::onButtonClicked, this));
 
     return true;
 }
 
-void CustomSongButton::selected()
+void CustomSongButton::onButtonClicked(Ref* sender)
 {
-    MenuItemSprite::selected();
-    // 可以在这里添加选中效果，比如改变颜色或播放音效
+    // 触发回调函数，传递索引和歌曲名
+    if (_callback) {
+        _callback(_index, _songName);
+    }
 }
 
-void CustomSongButton::unselected()
+void MenuPick_Custom::onSongButtonClicked(int index, const std::string& songName)
 {
-    MenuItemSprite::unselected();
-    // 恢复原始状态
+    // 更新当前选中的索引和歌曲名
+    _currentSelectedIndex = index;
+    _currentSelectedSong = songName;
+
+    // 切换曲绘
+    updateSongCover(songName);
+
+    // 更新箭头位置（如果需要）
+    updateArrowPosition(index);
+}
+
+void MenuPick_Custom::updateSongCover(const std::string& songName)
+{
+    // 移除旧的曲绘
+    this->removeChildByTag(7);
+
+    // 构建曲绘路径 - 假设曲绘文件名为 "cover.png"
+    std::string coverPath = "Custom/" + songName + "/cover.png";
+
+    auto visibleSize = Director::getInstance()->getVisibleSize();
+    auto newCover = Sprite::create(coverPath);
+
+    // 如果找不到曲绘，使用默认图片
+    if (!newCover) {
+        newCover = Sprite::create("Cover/default.png");
+        CCLOG("Cover image not found for song: %s", songName.c_str());
+    }
+
+    newCover->setScale(0.4);
+    newCover->setPosition(Vec2(visibleSize.width / 2 + 400, visibleSize.height / 2));
+    this->addChild(newCover, 3, 7); // 使用相同的tag 7
+}
+
+void MenuPick_Custom::updateArrowPosition(int index)
+{
+    auto songContainer = this->getChildByTag(100);
+    if (!songContainer) return;
+
+    auto pickarrow = dynamic_cast<Sprite*>(songContainer->getChildByTag(8));
+    if (pickarrow) {
+        float startY = 900.0f;
+        float spacing = 100.0f;
+        float newY = startY - (index - 1) * spacing;
+
+
+        // 关键修改：设置的是在songContainer内的相对位置
+        pickarrow->setPosition(Vec2(515, newY));
+
+        CCLOG("Arrow moved to relative position in container: (%f, %f)", 515.0f, newY);
+    }
 }
 
 void MenuPick_Custom::gameplay(Ref* pSender)
