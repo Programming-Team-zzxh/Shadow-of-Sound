@@ -71,3 +71,39 @@ bool ScoreStatisticsScene::init() {
 
     return true;
 }
+
+void ScoreStatisticsScene::createStatisticsInfo(const Size& visibleSize) {
+    // 统计信息背景
+    auto statsBg = LayerColor::create(Color4B(0, 0, 0, 150), visibleSize.width - 100, 50);
+    statsBg->setPosition(50, visibleSize.height - 160);
+    this->addChild(statsBg);
+
+    // 获取成绩数据
+    int totalSongs = ScoreSystem::getInstance()->getTotalSongsCount();
+    float average = ScoreSystem::getInstance()->calculateTop20AverageWithZeroPadding();
+    int playedCount = std::min(totalSongs, 20);
+
+    // 显示平均分
+    char avgText[128];
+    sprintf(avgText, "Average Score: %6.3f", average);
+    auto avgLabel = Label::createWithSystemFont(avgText, "Arial", 20);
+    avgLabel->setPosition(Vec2(visibleSize.width / 2 - 150, visibleSize.height - 135));
+    avgLabel->setColor(Color3B(100, 255, 100));
+    this->addChild(avgLabel);
+
+    // 显示游玩统计
+    char statsText[128];
+    sprintf(statsText, "Played: %2d/20", playedCount);
+    auto statsLabel = Label::createWithSystemFont(statsText, "Arial", 20);
+    statsLabel->setPosition(Vec2(visibleSize.width / 2, visibleSize.height - 135));
+    statsLabel->setColor(Color3B(200, 200, 255));
+    this->addChild(statsLabel);
+
+    // 显示总记录数
+    char totalText[128];
+    sprintf(totalText, "Total Records: %3d", totalSongs);
+    auto totalLabel = Label::createWithSystemFont(totalText, "Arial", 20);
+    totalLabel->setPosition(Vec2(visibleSize.width / 2 + 150, visibleSize.height - 135));
+    totalLabel->setColor(Color3B(200, 200, 255));
+    this->addChild(totalLabel);
+}
