@@ -3,6 +3,8 @@
 #include "Note_Tap.h"
 #include "Note_Hold.h"
 #include "winuser.h"
+#include <cocos/editor-support/cocostudio/SimpleAudioEngine.h>
+#include "ScoreSystem.h"
 
 #include <cocos/editor-support/cocostudio/SimpleAudioEngine.h>
 using namespace CocosDenshion;
@@ -10,13 +12,13 @@ using namespace rapidjson;
 
 USING_NS_CC;
 
-int Note_strack[4] = { 0 };//¹ìµÀ
-float Play_Sp;//ËÙ¶Èµ÷½Ú
-extern std::string Diff;//ÄÑ¶ÈÏà¹Ø
-extern std::string Filename;//ÎÄ¼þÃû
-bool Play_TimeStop = false;//Ê±Í£
-bool Play_TimeResume = false;//Ê±Ðø
-int PLay_Back = 0;//ÅÐ¶Ï·µ»Ø/ÖØ¿ª
+int Note_strack[4] = { 0 };//è½¨é“
+float Play_Sp;//é€Ÿåº¦è°ƒèŠ‚
+extern std::string Diff;//éš¾åº¦ç›¸å…³
+extern std::string Filename;//æ–‡ä»¶å
+bool Play_TimeStop = false;//æ—¶åœ
+bool Play_TimeResume = false;//æ—¶ç»­
+int PLay_Back = 0;//åˆ¤æ–­è¿”å›ž/é‡å¼€
 
 Scene* GamePlay::createScene()
 {
@@ -33,7 +35,7 @@ bool GamePlay::init()
 	auto visibleSize = Director::getInstance()->getVisibleSize();
 	Vec2 origin = Director::getInstance()->getVisibleOrigin();
 
-	//Background²ã,tag0,ÆäÏÂµÄLine,tag0,BackLine,tag1
+	//Backgroundå±‚,tag0,å…¶ä¸‹çš„Line,tag0,BackLine,tag1
 	auto Backlayer = LayerColor::create(Color4B::WHITE);
 	std::string filename = "Cover/" + Filename + ".png";
 	auto SkyStriker = Sprite::create(filename);
@@ -46,17 +48,17 @@ bool GamePlay::init()
 	(visibleSize.width / 2 + 303, 146), Color4F::WHITE);
 	Backlayer->addChild(Line, 1, 0);
 	this->addChild(Backlayer, 1, 0);
-	//±³¾°
+	//èƒŒæ™¯
 	auto BackLine = Sprite::create("Note icon/BackLine2.png");
 	BackLine->setAnchorPoint(Vec2(0, 1));
 	BackLine->setPosition(Vec2(0, visibleSize.height));
 	BackLine->setOpacity(200);
 	Backlayer->addChild(BackLine, 0, 1);
 
-	//NoteÒô·û²ã
+	//NoteéŸ³ç¬¦å±‚
 	auto Notelayer = LayerColor::create();
 	this->addChild(Notelayer, 1, 5);
-	//µÆ¹â
+	//ç¯å…‰
 	auto LightingL1 = Sprite::create("Note icon/Left_1.png");
 	LightingL1->setAnchorPoint(Vec2(0, 0));
 	LightingL1->setPosition(Vec2(visibleSize.width / 2-303, 0));
@@ -78,7 +80,7 @@ bool GamePlay::init()
 	LightingR2->setOpacity(0);
 	Notelayer->addChild(LightingR2, 2);
 
-	//¿ª¾ÖÏÔÊ¾°´¼ü
+	//å¼€å±€æ˜¾ç¤ºæŒ‰é”®
 	auto BackKey = Sprite::create("Note icon/Key.png");
 	BackKey->setAnchorPoint(Vec2(0.5, 0));
 	BackKey->setPosition(Vec2(visibleSize.width / 2, 0));
@@ -91,25 +93,25 @@ bool GamePlay::init()
 	auto Disappear = Sequence::create(Delay_1, Fade_2, Delay_2, Fade_1, NULL);
 	BackKey->runAction(Disappear);
 
-	//Combo¼ÆÊý
+	//Comboè®¡æ•°
 	auto Combo = Label::createWithTTF("COMBO", "fonts/arial.ttf", 48);
 	Combo->setTextColor(Color4B(139,215,250,255));
 	auto Number_Combo = Label::createWithTTF(" ", "fonts/arial.ttf", 48);
 	Number_Combo->setTextColor(Color4B(139, 215, 250, 255));
-	//Notelayer,tag5,ËüµÄCombo,tag0,Number_Combo,tag1,ËüµÄScore,tag2,½áËã»­Ãæ,tag3
+	//Notelayer,tag5,å®ƒçš„Combo,tag0,Number_Combo,tag1,å®ƒçš„Score,tag2,ç»“ç®—ç”»é¢,tag3
 	Notelayer->addChild(Combo, 3, 0);
 	Notelayer->addChild(Number_Combo, 3, 1);
 	Combo->setPosition(Vec2(visibleSize.width / 2, 1020));
 	Number_Combo->setPosition(Vec2(visibleSize.width / 2, 965));
 	
-	//¼Æ·Ö
+	//è®¡åˆ†
 	auto ScoreLable = Label::createWithTTF(" ", "fonts/Saira-Regular.ttf", 30);
 	ScoreLable->setTextColor(Color4B::WHITE);
 	Notelayer->addChild(ScoreLable, 3, 2);
 	ScoreLable->setAnchorPoint(Vec2(1, 1));
 	ScoreLable->setPosition(Vec2(visibleSize.width/2+300, visibleSize.height));
 
-	/*Ôö¼ÓÒ»¸ö¼ÆÊ±Æ÷,tag1
+	/*å¢žåŠ ä¸€ä¸ªè®¡æ—¶å™¨,tag1
 	auto Timelabel = Label::createWithTTF("Time:0", "fonts/Marker Felt.ttf", 24);
 	Timelabel->setPosition(Vec2(visibleSize.width / 2, visibleSize.height / 2));
 	Timelabel->setTextColor(Color4B::WHITE);
@@ -117,7 +119,7 @@ bool GamePlay::init()
 
 	this->schedule(CC_SCHEDULE_SELECTOR(GamePlay::Update_count));
 
-	//ËÙ¶È,Ez4,Hd6,In8
+	//é€Ÿåº¦,Ez4,Hd6,In8
 	if (Diff == "Ez")
 		Play_speed = 4;
 	else if(Diff == "Hd")
@@ -125,7 +127,7 @@ bool GamePlay::init()
 	else
 		Play_speed = 8;
 
-	/*²âÊÔÆ××ÓÓÃ
+	/*æµ‹è¯•è°±å­ç”¨
 	auto MusicFile = FileUtils::getInstance();
 	auto Musicscore = MusicFile->getStringFromFile("Music score/Escaping Gravity -TheFatRat.txt");
 	auto Timelabel1 = Label::createWithTTF(Musicscore, "fonts/Marker Felt.ttf", 24);
@@ -133,10 +135,10 @@ bool GamePlay::init()
 	Timelabel1->setTextColor(Color4B::BLACK);
 	this->addChild(Timelabel1, 1, 2);*/
 
-	//Éú³ÉÀÖÆ×
+	//ç”Ÿæˆä¹è°±
 	GamePre();
 
-	/*Í¼Ïñ²âÊÔ
+	/*å›¾åƒæµ‹è¯•
 	auto Azelia = Sprite::create("Note icon/Note_tap.png");
 	Azelia->setAnchorPoint(Vec2(0, 1));
 	Azelia->setPosition(Vec2(visibleSize.width / 2, 105));
@@ -144,12 +146,12 @@ bool GamePlay::init()
 
 	// creating a keyboard event listener
 	auto listener = EventListenerKeyboard::create();
-	//lambdaÄäÃûµÄº¯Êý¶ÔÏó
+	//lambdaåŒ¿åçš„å‡½æ•°å¯¹è±¡
 	listener->onKeyPressed = [=](EventKeyboard::KeyCode keyCode, Event* event) {
-		/*ÒòÎªEventKeyboard::KeyCode::KEYÃ¿Ö¡Ö»ÄÜ¼ì²âÒ»¸ö°´¼ü£¬¶øÒôÓÎ¶Ô°´¼üÊ±»úµÄÒªÇó½Ï¸ß
-		±ÈÈç£¬Ë«ÑºµÄÍ¬Ê±°´ÏÂ
-		ËùÒÔ¾ÍÓÃGetAsyncKeyState()×÷Îª°´ÏÂÊ±´¦Àí*/
-		/*²âÊÔ
+		/*å› ä¸ºEventKeyboard::KeyCode::KEYæ¯å¸§åªèƒ½æ£€æµ‹ä¸€ä¸ªæŒ‰é”®ï¼Œè€ŒéŸ³æ¸¸å¯¹æŒ‰é”®æ—¶æœºçš„è¦æ±‚è¾ƒé«˜
+		æ¯”å¦‚ï¼ŒåŒæŠ¼çš„åŒæ—¶æŒ‰ä¸‹
+		æ‰€ä»¥å°±ç”¨GetAsyncKeyState()ä½œä¸ºæŒ‰ä¸‹æ—¶å¤„ç†*/
+		/*æµ‹è¯•
 		if(keyCode == EventKeyboard::KeyCode::KEY_W)
 		{
 			SimpleAudioEngine::getInstance()->playEffect("Music file/Tap_Good.mp3");
@@ -200,7 +202,7 @@ bool GamePlay::init()
 			note->Hold_length = note->Hold_y;
 			note->initWithFile("Note icon/Note_hold.png");
 			note->setCapInsets(Rect(3, 3, 143, 143));
-			//ÉèÖÃÖÐÐÄÎ»ÖÃ£¬À­ÉìÒô·û
+			//è®¾ç½®ä¸­å¿ƒä½ç½®ï¼Œæ‹‰ä¼¸éŸ³ç¬¦
 			note->setAnchorPoint(Vec2(0, 1));
 			note->setPosition(visibleSize.width / 2 - 303, 1000);
 			note->setContentSize(Size(150, note->Hold_y));
@@ -211,7 +213,7 @@ bool GamePlay::init()
 		if (GetAsyncKeyState('A') & 0x8000 && Note_strack[0] != -1)
 		{
 			Note_strack[0] = 1;
-			//µÆ¹âÁÁÆð
+			//ç¯å…‰äº®èµ·
 			LightingL1->setOpacity(255);
 		}
 		if (GetAsyncKeyState('S') & 0x8000 && Note_strack[1] != -1)
@@ -229,7 +231,7 @@ bool GamePlay::init()
 			Note_strack[3] = 1;
 			LightingR1->setOpacity(255);
 		}
-		/*²âÊÔÆ××Ó
+		/*æµ‹è¯•è°±å­
 		else if (keyCode == EventKeyboard::KeyCode::KEY_A)
 		{
 			char table[32];
@@ -246,7 +248,7 @@ bool GamePlay::init()
 			GameEnd();
 		}*/
 	};
-	//ËÉ¿ª°´¼üÊ±
+	//æ¾å¼€æŒ‰é”®æ—¶
 	listener->onKeyReleased = [=](EventKeyboard::KeyCode keyCode, Event* event) {
 		if (keyCode == EventKeyboard::KeyCode::KEY_ESCAPE && !Play_End && !Play_TimeStop)
 		{
@@ -260,11 +262,11 @@ bool GamePlay::init()
 			backmeun(this);
 		}
 		
-		//»Ö¸´°´¼üËø¶¨,Ã»ÄÇÃ´ÑÏ¸ñ¾ÍÖ±½ÓÓÃEventKeyboard::KeyCodeÁË
+		//æ¢å¤æŒ‰é”®é”å®š,æ²¡é‚£ä¹ˆä¸¥æ ¼å°±ç›´æŽ¥ç”¨EventKeyboard::KeyCodeäº†
 		else if (keyCode == EventKeyboard::KeyCode::KEY_A)
 		{
 			Note_strack[0] = 0;
-			//µÆ¹âÏ¨»ð
+			//ç¯å…‰ç†„ç«
 			LightingL1->setOpacity(0);
 		}
 		else if (keyCode == EventKeyboard::KeyCode::KEY_S)
@@ -285,7 +287,7 @@ bool GamePlay::init()
 	};
 	_eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
 
-	//¶ÁÈ¡JsonÎÄ¼þ
+	//è¯»å–Jsonæ–‡ä»¶
 	std::string Rec = FileUtils::getInstance()->getStringFromFile("Record/GameRecord.json");
 	RecJson.Parse<rapidjson::kParseDefaultFlags>(Rec.c_str());
 
@@ -309,9 +311,9 @@ void GamePlay::Update_count(float dt)
 		Play_TimeStop = false;
 		SimpleAudioEngine::getInstance()->resumeBackgroundMusic();
 	}
-	else if (Play_TimeStop)return;//Ê±Í£
+	else if (Play_TimeStop)return;//æ—¶åœ
 
-	//¶¨µã²¥·ÅÒôÀÖ
+	//å®šç‚¹æ’­æ”¾éŸ³ä¹
 	else if (Game_time == (int)((Director::getInstance()->getVisibleSize().height - 165)
 		/ (Play_speed*Play_Sp)))
 	{
@@ -319,7 +321,7 @@ void GamePlay::Update_count(float dt)
 		SimpleAudioEngine::getInstance()->playBackgroundMusic(filename.data());
 		Play_Start = true;
 	}
-	//½áÊøÁ¦
+	//ç»“æŸåŠ›
 	else if ((!SimpleAudioEngine::getInstance()->isBackgroundMusicPlaying()) 
 		&& Play_Start)
 	{
@@ -331,14 +333,14 @@ void GamePlay::Update_count(float dt)
 	Game_time++;
 
 	auto visibleSize = Director::getInstance()->getVisibleSize();
-	/*²âÊÔ
-	//»ñÈ¡ tag=1 µÄLabel
+	/*æµ‹è¯•
+	//èŽ·å– tag=1 çš„Label
 	char time[32];
 	auto Timelabel = (Label*)this->getChildByTag(1);
 	sprintf(time, "Time:%08d", (int)Game_time/120);
 	Timelabel->setString(time);*/
 
-	//¸üÐÂÒ»ÏÂComboÖµ
+	//æ›´æ–°ä¸€ä¸‹Comboå€¼
 	char combo[32];
 	auto ComboNumer = (Label*)(Layer*)this->getChildByTag(5)->getChildByTag(1);
 	sprintf(combo, "%d", Play_Combo);
@@ -347,7 +349,7 @@ void GamePlay::Update_count(float dt)
 		Play_MaxCombo = Play_Combo;
 	static int Cb_one = 0;
 	static int Cb_two = 0;
-	//°ÙcomboÁ£×ÓÌØÐ§
+	//ç™¾comboç²’å­ç‰¹æ•ˆ
 	if (Play_Combo % 100 == 0 && Play_Combo!=0)
 	{
 		if (Cb_one == Cb_two)
@@ -361,16 +363,16 @@ void GamePlay::Update_count(float dt)
 		Cb_two++;
 	}
 
-	//¸üÐÂ·ÖÊý
+	//æ›´æ–°åˆ†æ•°
 	char score[32];
 	auto ScoreNumer = (Label*)(Layer*)this->getChildByTag(5)->getChildByTag(2);
 	sprintf(score, "%07d", Play_Score);
 	ScoreNumer->setString(score);
 
-	//Éú³ÉÆ××Ó
+	//ç”Ÿæˆè°±å­
 	if (Game_file.empty())
 		;
-	else if ((int)(Game_file.front()*120) == Game_time)//Éú³ÉÊ±¼ä
+	else if ((int)(Game_file.front()*120) == Game_time)//ç”Ÿæˆæ—¶é—´
 	{
 		CreateNote(Game_time);
 	}
@@ -394,21 +396,21 @@ void GamePlay::CreateNote(int time)
 {
 	auto visibleSize = Director::getInstance()->getVisibleSize();
 	Game_file.pop_front();
-	int X = Game_file.front();//Éú³É¹ìµÀ
+	int X = Game_file.front();//ç”Ÿæˆè½¨é“
 	Game_file.pop_front();
-	float Speed = Game_file.front()*Play_Sp;//ËÙ¶È
+	float Speed = Game_file.front()*Play_Sp;//é€Ÿåº¦
 	Game_file.pop_front();
-	int Y = (int)Game_file.front();//ÀàÐÍ
+	int Y = (int)Game_file.front();//ç±»åž‹
 	Game_file.pop_front();
 	if (Y == 1)//Tap
 	{
 		auto note = new Note(X, Y, Speed);
-		//ÊÂÊµÉÏ£¬µ±ÎÒÃÇ´´½¨¾«ÁéÊ±£¬cocos2dxÒÑ¾­°ïÎÒÃÇ×öºÃÁË»º´æ
+		//äº‹å®žä¸Šï¼Œå½“æˆ‘ä»¬åˆ›å»ºç²¾çµæ—¶ï¼Œcocos2dxå·²ç»å¸®æˆ‘ä»¬åšå¥½äº†ç¼“å­˜
 		note->initWithFile("Note icon/Note_tap.png");
-		//ÃªµãÉèÖÃÓëÉú³ÉÎ»ÖÃ
+		//é”šç‚¹è®¾ç½®ä¸Žç”Ÿæˆä½ç½®
 		note->setAnchorPoint(Vec2(0, 1));
 		note->setPosition(visibleSize.width / 2 - 455 + X * 152, visibleSize.height+15);
-		//Éú³ÉÔÚNote²ã
+		//ç”Ÿæˆåœ¨Noteå±‚
 		auto Note_layer = (LayerColor*)this->getChildByTag(5);
 		Note_layer->addChild(note, 1);
 		note->Note_down();
@@ -428,7 +430,7 @@ void GamePlay::CreateNote(int time)
 	
 	
 	
-	//µÝ¹é£¬ÅÐ¶ÏÊÇ·ñÓÐÍ¬Ò»Ê±¼äÉú³ÉµÄÒô·û
+	//é€’å½’ï¼Œåˆ¤æ–­æ˜¯å¦æœ‰åŒä¸€æ—¶é—´ç”Ÿæˆçš„éŸ³ç¬¦
 	if (!Game_file.empty())
 	{
 		if ((int)(Game_file.front() * 120) == time)
@@ -442,13 +444,13 @@ void GamePlay::CreateNote(int time)
 void GamePlay::GamePre()
 {
 	std::string filename = "Music library/" + Filename + ".mp3";
-	//Ô¤¼ÓÔØ¸èÇú
+	//é¢„åŠ è½½æ­Œæ›²
 	SimpleAudioEngine::getInstance()->preloadEffect(filename.data());
-	//¶ÁÈ¡Æ××ÓÎÄ¼þ
+	//è¯»å–è°±å­æ–‡ä»¶
 	auto MusicFile = FileUtils::getInstance();
 	filename = "Music score/"+ Diff+"_" + Filename + ".txt";
 	auto Musicscore = MusicFile->getStringFromFile(filename);
-	//×Ö·û´®×ª»¯Îªfloat£¬ÈÓ½ølist
+	//å­—ç¬¦ä¸²è½¬åŒ–ä¸ºfloatï¼Œæ‰”è¿›list
 	char Temporary[12] = { 0 };
 	int i, tk;
 	float tpr = 0;
@@ -464,14 +466,14 @@ void GamePlay::GamePre()
 			tk = 0;
 			sscanf(Temporary, "%f", &tpr);
 			Game_file.push_back(tpr);
-			//¼ÆËãÎïÁ¿
+			//è®¡ç®—ç‰©é‡
 			Play_Toatal++;
 			memset(Temporary, 0, sizeof(Temporary));
 		}
 	}
 	Play_Toatal = Play_Toatal / 4;
 	Play_GetScore = 1000000 / Play_Toatal;
-	/*²âÊÔÓÃ
+	/*æµ‹è¯•ç”¨
 	char table[32];
 	auto Timelabel2 = (Label*)this->getChildByTag(2);
 	Timelabel2->setString(table);
@@ -505,7 +507,7 @@ void GamePlay::GameEnd()
 	GameScore->setPosition(Vec2(1130, 650));
 	sprintf(Temporary, "%d", Play_MaxCombo);
 	auto GameMaxCombo = Label::createWithTTF(Temporary, "fonts/Saira-Thin.ttf", 96);
-	//ÒòÎª¿¹¾â³Ý»áµ¼ÖÂ×ÖÌåÄ£ºý£¬ËùÒÔ²»µÃ²»Ë«±¶´óÐ¡È»ºóËõÐ¡
+	//å› ä¸ºæŠ—é”¯é½¿ä¼šå¯¼è‡´å­—ä½“æ¨¡ç³Šï¼Œæ‰€ä»¥ä¸å¾—ä¸åŒå€å¤§å°ç„¶åŽç¼©å°
 	GameMaxCombo->setScale(0.5);
 	GameEnd->addChild(GameMaxCombo, 1);
 	GameMaxCombo->setPosition(Vec2(836, 275));
@@ -539,7 +541,7 @@ void GamePlay::GameEnd()
 	GameEnd->addChild(GameDiff, 1);
 	GameDiff->setPosition(Vec2(955, 345));
 
-	//½áËã·ÖÊýµ½ÆÀ¼¶
+	//ç»“ç®—åˆ†æ•°åˆ°è¯„çº§
 	auto GameLevel = Label::createWithTTF(" ", "fonts/Saira-Regular.ttf", 264);
 	std::string Play_level;
 	if (Play_Toatal == Play_Perfect)
@@ -576,24 +578,32 @@ void GamePlay::GameEnd()
 	GameEnd->addChild(GameLevel, 1);
 	GameLevel->setPosition(Vec2(620, 680));
 
-	//½áËãµ½ÎÄ¼þ
+	//ç»“ç®—åˆ°æ–‡ä»¶
 	if (RecJson[Filename.c_str()]["Score"][Diff.c_str()].GetInt() < Play_Score)
 	{
 		RecJson[Filename.c_str()]["Score"][Diff.c_str()].SetInt(Play_Score);
 		RecJson[Filename.c_str()]["Level"][Diff.c_str()].SetString(Play_level.c_str(), Play_level.length());
 	}
-	//½«jsonÊý¾ÝÖØÐÂÐ´ÈëÎÄ¼þÖÐ
+	//å°†jsonæ•°æ®é‡æ–°å†™å…¥æ–‡ä»¶ä¸­
 	StringBuffer buffer;
 	rapidjson::Writer<StringBuffer> writer(buffer);
 	RecJson.Accept(writer);
 	//FILE* Readfile = fopen("Resources/Record/GameRecord.json", "wb");
-	//²»ÖªµÀÎªÊ²Ã´ÔÚÕâcocos2d-x²»ÄÜÖ±½ÓÓÃÏà¶ÔÂ·¾¶
-	// »¹ÊÇ²»ÐÐ£¬Ïà¶ÔÂ·¾¶·½°¸Ê§°ÜÁË
-	// ÔÚvs£¬Ö±½Ó´ò¿ªexe£¬»¹ÊÇsteam£¬ËüÃÇÊÇ¸÷²»ÏàÍ¬µÄÏà¶ÔÂ·¾¶¶ÁÈ¡
+	//ä¸çŸ¥é“ä¸ºä»€ä¹ˆåœ¨è¿™cocos2d-xä¸èƒ½ç›´æŽ¥ç”¨ç›¸å¯¹è·¯å¾„
+	// è¿˜æ˜¯ä¸è¡Œï¼Œç›¸å¯¹è·¯å¾„æ–¹æ¡ˆå¤±è´¥äº†
+	// åœ¨vsï¼Œç›´æŽ¥æ‰“å¼€exeï¼Œè¿˜æ˜¯steamï¼Œå®ƒä»¬æ˜¯å„ä¸ç›¸åŒçš„ç›¸å¯¹è·¯å¾„è¯»å–
 	std::string filepath = FileUtils::getInstance()->fullPathForFilename("Record/GameRecord.json");
 	FILE* Readfile = fopen(filepath.c_str(), "wb");
 	fputs(buffer.GetString(), Readfile);
 	fclose(Readfile);
+	//ä»¥ä¸‹ä¸ºæ–°å¢žä»£ç ï¼ï¼ï¼ï¼ï¼
+    // æ·»åŠ åˆ°è¯„åˆ†ç³»ç»Ÿ
+    int difficultyLevel = RecJson[Filename.c_str()]["Diff"][Diff.c_str()].GetInt();
+    ScoreSystem::getInstance()->addSongScore(Filename, Diff, Play_Score, difficultyLevel);
+
+     // è®¡ç®—å¹¶æ˜¾ç¤ºå‰20å¹³å‡åˆ†
+     float top20Average = ScoreSystem::getInstance()->calculateTop20AverageWithZeroPadding();
+     CCLOG("Top 20 Average Score: %.2f", top20Average);
 }
 
 void GamePlay::GamePause(Ref* pSender)
@@ -603,36 +613,36 @@ void GamePlay::GamePause(Ref* pSender)
 	TemperarySprite->runAction(Sequence::create(DelayTime::create(1.0f),
 		CallFunc::create(CC_CALLBACK_0(GamePlay::PauseAfter, this)), NULL));
 
-	/*ÒòÎªnewÒô·ûµÄÔµ¹Ê£¬»áµ¼ÖÂ£º
-		Êý ¾Ý Ð¹ Â¶
+	/*å› ä¸ºnewéŸ³ç¬¦çš„ç¼˜æ•…ï¼Œä¼šå¯¼è‡´ï¼š
+		æ•° æ® æ³„ éœ²
 
 	auto visibleSize = Director::getInstance()->getVisibleSize();
 	auto renderTexture = RenderTexture::create(visibleSize.width, visibleSize.height);
 	
 	this->pause();
-	renderTexture->begin();            //¿ªÊ¼×¥ÆÁ
-	this->visit(); //±éÀúµ±Ç°³¡¾°SceneµÄÈ«²¿×Ó½ÚµãÐÅÏ¢£¬»­ÈërenderTextureÖÐ
-	renderTexture->end();				//½áÊø×¥ÆÁ
+	renderTexture->begin();            //å¼€å§‹æŠ“å±
+	this->visit(); //éåŽ†å½“å‰åœºæ™¯Sceneçš„å…¨éƒ¨å­èŠ‚ç‚¹ä¿¡æ¯ï¼Œç”»å…¥renderTextureä¸­
+	renderTexture->end();				//ç»“æŸæŠ“å±
 
 	Scene* scene = GamePause::createScene(renderTexture);
 
-	//ÉÏÃæ·½·¨ÐÐ²»Í¨¾ÍÖ±½Ó½Ø°É
+	//ä¸Šé¢æ–¹æ³•è¡Œä¸é€šå°±ç›´æŽ¥æˆªå§
 	//utils::captureScreen(CC_CALLBACK_2(GamePlay::PauseAfter, this), "PauseScreenShot.png");
 
-	Õâ¼¸¸ö·½°¸±»BanÁË
+	è¿™å‡ ä¸ªæ–¹æ¡ˆè¢«Banäº†
 	*/
 }
 
 void GamePlay::PauseAfter()
 {
-	//Ç°³µÖ®¼ø£¬Õâ»ØºÜÄÑÄÚ´æÐ¹Â©
+	//å‰è½¦ä¹‹é‰´ï¼Œè¿™å›žå¾ˆéš¾å†…å­˜æ³„æ¼
 	auto visibleSize = Director::getInstance()->getVisibleSize();
 	auto renderTexture = RenderTexture::create(visibleSize.width, visibleSize.height);
 
 	this->pause();
-	renderTexture->begin();            //¿ªÊ¼×¥ÆÁ
-	this->visit(); //±éÀúµ±Ç°³¡¾°SceneµÄÈ«²¿×Ó½ÚµãÐÅÏ¢£¬»­ÈërenderTextureÖÐ
-	renderTexture->end();				//½áÊø×¥ÆÁ
+	renderTexture->begin();            //å¼€å§‹æŠ“å±
+	this->visit(); //éåŽ†å½“å‰åœºæ™¯Sceneçš„å…¨éƒ¨å­èŠ‚ç‚¹ä¿¡æ¯ï¼Œç”»å…¥renderTextureä¸­
+	renderTexture->end();				//ç»“æŸæŠ“å±
 
 	Scene* scene = GamePause::createScene(renderTexture);
 	Director::getInstance()->pushScene(TransitionCrossFade::create(0.5, scene));
@@ -645,4 +655,5 @@ void GamePlay::backmeun(Ref* pSender)
 	Play_TimeResume = false;
 	SimpleAudioEngine::getInstance()->stopBackgroundMusic(true);
 	Director::getInstance()->popScene();
+
 }
