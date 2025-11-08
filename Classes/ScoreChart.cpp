@@ -109,3 +109,118 @@ void ScoreChart::calculateChartData() {
         _maxScore = 2.0f;
     }
 }
+
+void ScoreChart::drawBackground() {
+    // 图表背景
+    auto bg = LayerColor::create(Color4B(20, 20, 40, 200), _chartSize.width, _chartSize.height);
+    bg->setPosition(0, 0);
+    this->addChild(bg);
+    
+    // 边框
+    auto border = DrawNode::create();
+    border->drawRect(Vec2(0, 0), Vec2(_chartSize.width, _chartSize.height), Color4F(0.8f, 0.8f, 0.8f, 0.6f));
+    this->addChild(border);
+}
+
+void ScoreChart::drawGrid() {
+    auto drawNode = DrawNode::create();
+    
+    // 水平网格线
+    int horizontalLines = 4;
+    for (int i = 0; i <= horizontalLines; i++) {
+        float y = (i * _chartSize.height) / horizontalLines;
+        drawNode->drawLine(Vec2(0, y), Vec2(_chartSize.width, y), Color4F(1, 1, 1, 0.15f));
+    }
+    
+    // 垂直网格线（如果数据点足够多）
+    if (_dataPointCount > 1) {
+        int verticalLines = std::min(_dataPointCount - 1, 8);
+        for (int i = 0; i <= verticalLines; i++) {
+            float x = (i * _chartSize.width) / verticalLines;
+            drawNode->drawLine(Vec2(x, 0), Vec2(x, _chartSize.height), Color4F(1, 1, 1, 0.15f));
+        }
+    }
+    
+    this->addChild(drawNode);
+}
+
+void ScoreChart::drawLineChart() {
+    if (_dataPointCount < 1) {
+        // 没有数据时显示提示
+        auto noDataLabel = Label::createWithSystemFont("No enough data for chart", "Arial", 14);
+        noDataLabel->setPosition(Vec2(_chartSize.width/2, _chartSize.height/2));
+        noDataLabel->setColor(Color3B(150, 150, 150));
+        this->addChild(noDataLabel);
+        return;
+    }
+    
+    auto drawNode = DrawNode::create();
+    
+    if (_dataPointCount == 1) {
+        // 只有一个数据点时显示点
+        float x = _chartSize.width / 2;
+        float y = ((_scoreHistory[0] - _minScore) / (_maxScore - _minScore)) * _chartSize.height;
+        
+        drawNode->drawDot(Vec2(x, y), 6, Color4F(0, 1, 0, 1.0f));
+        
+        // 显示数值
+        char scoreText[32];
+        sprintf(scoreText, "%.2f", _scoreHistory[0]);
+        auto scoreLabel = Label::createWithSystemFont(scoreText, "Arial", 12);
+        scoreLabel->setPosition(Vec2(x + 25, y));
+        scoreLabel->setColor(Color3B::WHITE);
+        this->addChild(scoreLabel);
+        
+    } else {
+        // 多个数据点时绘制折线
+        for (int i = 0; i < _dataPointCount - 1; i++) {
+            float x1 = (i * _chartSize.width) / (_dataPointCount - 1);
+            float y1 = ((_scoreHistory[i] - _minScore) / (_maxScore - _minScore)) * _chartSize.height;
+            
+            float x2 = ((i + 1) * _chartSize.width) / (_dataPointCount - 1);
+            float y2 = ((_scoreHistory[i + 1] - _minScore) / (_maxScore - _minScore)) * _chartSize.height;
+            
+            // 使用渐变色：分数上升为绿色，下降为红色
+            Color4F lineColor;
+            float lineWidth = 2.5f;
+            
+            if (_scoreHistory[i + 1] >= _scoreHistory[i]) {
+                lineColor = Color4F(0.2f, 0.8f, 0.2f, 1.0f); // 绿色 - 进步
+            } else {
+                lineColor = Color4F(0.8f, 0.2f, 0.2f, 1.0f); // 红色 - 退步
+            }
+            
+            drawNode->drawLine(Vec2(x1, y1), Vec2(x2, y2), lineColor);
+            
+            // 绘制数据点
+            drawNode->drawDot(Vec2(x1, y1), 4, Color4F(1, 1, 1, 1.0f));
+            drawNode->drawDot(Vec2(x2, y2), 4, Color4F(1, 1, 1, 1.0f));
+            
+            // 在第一个点和最后一个点显示数值
+            if (i == 0) {
+                char scoreText[32];
+                sprintf(scoreText, "Start: %.2f", _scoreHistory[i]);
+                auto startLabel = Label::createWithSystemFont(scoreText, "Arial", 10);
+                startLabel->setPosition(Vec2(x1 + 30, y1));
+                startLabel->setColor(Color3B(200, 200, 200));
+                this->addChild(startLabel);
+            }
+            
+            if (i == _dataPointCount - 2) {
+                char scoreText[32];
+                sprintf(scoreText, "Now: %.2f", _scoreHistory[i + 1]);
+                auto currentLabel = Label::createWithSystemFont(scoreText, "Arial", 10);
+                currentLabel->setPosition(Vec2(x2 - 30, y2 + 15));
+                currentLabel->setColor(Color3B::WHITE);
+                this->addChild(currentLabel);
+            }
+        }
+        
+        // 绘制趋势线（线性回归）
+        if (_dataPointCount >= 3) {
+            drawTrendLine(drawNode);
+        }
+    }
+    
+    this->addChild(drawNode);
+}
