@@ -251,3 +251,12 @@ void ScoreStatisticsScene::createChartSection(const Size& visibleSize) {
     );
     this->addChild(sectionSeparator);
 }
+
+void ScoreStatisticsScene::backToMenu() {
+    Director::getInstance()->popScene();
+}
+
+void ScoreStatisticsScene::refreshDisplay() {
+    // 刷新显示（如果需要的话）
+}
+
