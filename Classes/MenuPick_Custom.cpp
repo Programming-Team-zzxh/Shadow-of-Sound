@@ -495,11 +495,64 @@ void MenuPick_Custom::pickdifficulty(float dt)
     gamespeed->setString(Temporary);
 }
 
+void MenuPick_Custom::showFileSizeWarning()
+{
+    auto visibleSize = Director::getInstance()->getVisibleSize();
 
+    // 创建灰色背景
+    auto bg = LayerColor::create(Color4B(100, 100, 100, 200), 300, 60);
+    bg->setPosition(Vec2(visibleSize.width - 320, 20));
+    bg->setTag(999); // 使用特殊tag便于管理
+
+    // 创建提示文字
+    auto warningLabel = Label::createWithTTF("音乐文件太大了！", "fonts/arial.ttf", 24);
+    warningLabel->setTextColor(Color4B::WHITE);
+    warningLabel->setPosition(Vec2(150, 30));
+    bg->addChild(warningLabel);
+
+    this->addChild(bg, 999);
+
+    // 3秒后自动消失
+    auto delay = DelayTime::create(3.0f);
+    auto fadeOut = FadeOut::create(0.5f);
+    auto remove = CallFunc::create([bg]() {
+        bg->removeFromParentAndCleanup(true);
+        });
+    auto sequence = Sequence::create(delay, fadeOut, remove, nullptr);
+    bg->runAction(sequence);
+}
 
 void MenuPick_Custom::gameplay(Ref* pSender)
 {
-   
+    // 检查音乐文件大小
+    std::string musicPath = "Custom/" + _currentSelectedSong + "/music.mp3";
+    std::string altMusicPath = "Custom/" + _currentSelectedSong + "/" + _currentSelectedSong + ".mp3";
+
+    // 获取文件大小
+    long fileSize = 0;
+    std::string actualMusicPath;
+
+    if (FileUtils::getInstance()->isFileExist(musicPath)) {
+        actualMusicPath = FileUtils::getInstance()->fullPathForFilename(musicPath);
+    }
+    else if (FileUtils::getInstance()->isFileExist(altMusicPath)) {
+        actualMusicPath = FileUtils::getInstance()->fullPathForFilename(altMusicPath);
+    }
+
+    if (!actualMusicPath.empty()) {
+        FILE* file = fopen(actualMusicPath.c_str(), "rb");
+        if (file) {
+            fseek(file, 0, SEEK_END);
+            fileSize = ftell(file);
+            fclose(file);
+
+            // 50MB = 50 * 1024 * 1024 = 52428800 bytes
+            if (fileSize > 52428800L) {
+                showFileSizeWarning();
+                return; // 不进入游戏
+            }
+        }
+    }
 
     // 设置全局文件名 - 使用自定义歌曲的文件夹名
     Filename = _currentSelectedSong;

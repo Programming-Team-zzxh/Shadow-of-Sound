@@ -54,7 +54,7 @@ private:
     void onSongButtonClicked(int index, const std::string& songName);
     void updateSongCover(const std::string& songName);
     void updateArrowPosition(int index);
-
+    void showFileSizeWarning();
 
     int _currentSelectedIndex;
     std::string _currentSelectedSong;
