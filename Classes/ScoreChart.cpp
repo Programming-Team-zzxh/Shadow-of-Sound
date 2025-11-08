@@ -224,3 +224,37 @@ void ScoreChart::drawLineChart() {
     
     this->addChild(drawNode);
 }
+
+void ScoreChart::drawTrendLine(DrawNode* drawNode) {
+    // 计算线性回归
+    float sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    int n = _dataPointCount;
+    
+    for (int i = 0; i < n; i++) {
+        float x = (float)i / (n - 1); // 归一化x值
+        float y = (_scoreHistory[i] - _minScore) / (_maxScore - _minScore); // 归一化y值
+        
+        sumX += x;
+        sumY += y;
+        sumXY += x * y;
+        sumX2 += x * x;
+    }
+    
+    float slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    float intercept = (sumY - slope * sumX) / n;
+    
+    // 绘制趋势线
+    float x1 = 0;
+    float y1 = intercept;
+    float x2 = 1.0f;
+    float y2 = slope + intercept;
+    
+    // 转换为实际坐标
+    float actualX1 = x1 * _chartSize.width;
+    float actualY1 = y1 * _chartSize.height;
+    float actualX2 = x2 * _chartSize.width;
+    float actualY2 = y2 * _chartSize.height;
+    
+    // 绘制虚线趋势线
+    drawDashedLine(drawNode, Vec2(actualX1, actualY1), Vec2(actualX2, actualY2), Color4F(1, 1, 1, 0.6f), 2.0f);
+}
