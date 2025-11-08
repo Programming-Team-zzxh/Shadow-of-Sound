@@ -50,7 +50,7 @@ private:
     std::string getMusicFilePath();
     std::string getChartFilePath();
     std::string getCoverFilePath();
-
+    std::string getRecordFilePath();
 };
 
 #endif

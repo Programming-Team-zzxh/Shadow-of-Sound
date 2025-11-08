@@ -290,6 +290,21 @@ bool GamePlay::init()
 	};
 	_eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
 
+	//读取Json文件
+	std::string recordPath = getRecordFilePath();
+	std::string Rec = FileUtils::getInstance()->getStringFromFile(recordPath);
+	if (Rec.empty()) {
+		CCLOG("Failed to load record file: %s", recordPath.c_str());
+		// 可以创建一个空的JSON文档作为备用
+		RecJson.SetObject();
+	}
+	else {
+		RecJson.Parse<rapidjson::kParseDefaultFlags>(Rec.c_str());
+		if (RecJson.HasParseError()) {
+			CCLOG("JSON parse error in record file: %s", recordPath.c_str());
+			RecJson.SetObject();
+		}
+	}
 
 	return true;
 }
@@ -366,7 +381,23 @@ std::string GamePlay::getCoverFilePath()
 	return "Cover/" + Filename + ".png";
 }
 
+std::string GamePlay::getRecordFilePath()
+{
+	std::string customPath = getCustomSongPath();
+	if (!customPath.empty()) {
+		// 自定义歌曲：使用歌曲文件夹内的record.json
+		std::string customRecordPath = customPath + "/record.json";
+		if (FileUtils::getInstance()->isFileExist(customRecordPath)) {
+			return customRecordPath;
+		}
+		else {
+			CCLOG("Custom record file not found: %s, using default record", customRecordPath.c_str());
+		}
+	}
 
+	// 原版歌曲：使用原来的记录文件
+	return "Record/GameRecord.json";
+}
 
 void GamePlay::menuCloseCallback(Ref* pSender)
 {
@@ -767,7 +798,22 @@ void GamePlay::GameEnd()
 			RecJson.GetAllocator()
 		);
 	}
+	//将json数据重新写入文件中
+	StringBuffer buffer;
+	rapidjson::Writer<StringBuffer> writer(buffer);
+	RecJson.Accept(writer);
 
+	std::string recordPath = getRecordFilePath();
+	std::string filepath = FileUtils::getInstance()->fullPathForFilename(recordPath);
+	FILE* Readfile = fopen(filepath.c_str(), "wb");
+	if (Readfile) {
+		fputs(buffer.GetString(), Readfile);
+		fclose(Readfile);
+		CCLOG("Record saved to: %s", filepath.c_str());
+	}
+	else {
+		CCLOG("Failed to save record to: %s", filepath.c_str());
+	}
 }
 
 void GamePlay::GamePause(Ref* pSender)
