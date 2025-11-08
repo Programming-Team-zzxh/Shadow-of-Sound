@@ -35,8 +35,13 @@ bool GamePlay::init()
 
 	//Background层,tag0,其下的Line,tag0,BackLine,tag1
 	auto Backlayer = LayerColor::create(Color4B::WHITE);
-	std::string filename = "Cover/" + Filename + ".png";
+	std::string filename = getCoverFilePath();
 	auto SkyStriker = Sprite::create(filename);
+	if (!SkyStriker) {
+		// 如果曲绘加载失败，使用默认图片
+		SkyStriker = Sprite::create("Cover/default.png");
+		CCLOG("Failed to load cover for: %s, using default", Filename.c_str());
+	}
 	SkyStriker->setPosition(Vec2(visibleSize.width / 2, visibleSize.height / 2));
 	SkyStriker->setOpacity(255);
 	Backlayer->addChild(SkyStriker, 0);
@@ -285,12 +290,83 @@ bool GamePlay::init()
 	};
 	_eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
 
-	//读取Json文件
-	std::string Rec = FileUtils::getInstance()->getStringFromFile("Record/GameRecord.json");
-	RecJson.Parse<rapidjson::kParseDefaultFlags>(Rec.c_str());
 
 	return true;
 }
+
+std::string GamePlay::getCustomSongPath()
+{
+	// 检查是否是自定义歌曲（通过判断歌曲名是否在Custom文件夹中存在）
+	std::string customPath = "Custom/" + Filename;
+	if (FileUtils::getInstance()->isDirectoryExist(customPath)) {
+		return customPath;
+	}
+	return ""; // 返回空字符串表示不是自定义歌曲
+}
+
+std::string GamePlay::getMusicFilePath()
+{
+	std::string customPath = getCustomSongPath();
+	if (!customPath.empty()) {
+		// 自定义歌曲：尝试多种可能的音乐文件扩展名
+		std::string paths[] = {
+			customPath + "/music.mp3",
+			customPath + "/" + Filename + ".mp3",
+		};
+
+		for (const auto& path : paths) {
+			if (FileUtils::getInstance()->isFileExist(path))
+				return path;
+		}
+	}
+	// 原版歌曲
+	return "Music library/" + Filename + ".mp3";
+}
+
+std::string GamePlay::getChartFilePath()
+{
+	std::string customPath = getCustomSongPath();
+	if (!customPath.empty()) {
+		// 自定义歌曲：优先使用JSON格式谱面
+		std::string jsonPath = customPath + "/" + Diff + ".json";
+		if (FileUtils::getInstance()->isFileExist(jsonPath)) {
+			return jsonPath;
+		}
+
+		// 如果没有JSON，尝试TXT格式
+		std::string txtPath = customPath + "/" + Diff + ".txt";
+		if (FileUtils::getInstance()->isFileExist(txtPath)) {
+			return txtPath;
+		}
+	}
+
+	// 原版歌曲
+	return "Music score/" + Diff + "_" + Filename + ".txt";
+}
+
+std::string GamePlay::getCoverFilePath()
+{
+	std::string customPath = getCustomSongPath();
+	if (!customPath.empty()) {
+		// 自定义歌曲：尝试多种可能的曲绘文件名
+		std::string paths[] = {
+			customPath + "/cover.png",
+			customPath + "/" + Filename + ".png",
+			"Cover/" + Filename + ".png"  // 回退到原版路径
+		};
+
+		for (const auto& path : paths) {
+			if (FileUtils::getInstance()->isFileExist(path)) {
+				return path;
+			}
+		}
+	}
+
+	// 原版歌曲
+	return "Cover/" + Filename + ".png";
+}
+
+
 
 void GamePlay::menuCloseCallback(Ref* pSender)
 {
@@ -313,11 +389,18 @@ void GamePlay::Update_count(float dt)
 
 	//定点播放音乐
 	else if (Game_time == (int)((Director::getInstance()->getVisibleSize().height - 165)
-		/ (Play_speed*Play_Sp)))
+		/ (Play_speed * Play_Sp)))
 	{
-		std::string filename = "Music library/" + Filename + ".mp3";
-		SimpleAudioEngine::getInstance()->playBackgroundMusic(filename.data());
-		Play_Start = true;
+		std::string filename = getMusicFilePath();
+		if (FileUtils::getInstance()->isFileExist(filename)) {
+			SimpleAudioEngine::getInstance()->playBackgroundMusic(filename.data());
+			Play_Start = true;
+		}
+		else {
+			CCLOG("Music file not found: %s", filename.c_str());
+			// 即使音乐文件不存在，也标记为开始，让游戏继续
+			Play_Start = true;
+		}
 	}
 	//结束力
 	else if ((!SimpleAudioEngine::getInstance()->isBackgroundMusicPlaying()) 
@@ -441,13 +524,23 @@ void GamePlay::CreateNote(int time)
 
 void GamePlay::GamePre()
 {
-	std::string filename = "Music library/" + Filename + ".mp3";
-	//预加载歌曲
-	SimpleAudioEngine::getInstance()->preloadEffect(filename.data());
+	std::string filename = getMusicFilePath();
+	if (FileUtils::getInstance()->isFileExist(filename)) {
+		SimpleAudioEngine::getInstance()->preloadBackgroundMusic(filename.c_str());
+	}
+	else {
+		CCLOG("Failed to preload music: %s", filename.c_str());
+	}
 	//读取谱子文件
 	auto MusicFile = FileUtils::getInstance();
-	filename = "Music score/"+ Diff+"_" + Filename + ".txt";
+	filename = getChartFilePath();
 	auto Musicscore = MusicFile->getStringFromFile(filename);
+
+	if (Musicscore.empty()) {
+		CCLOG("Failed to load chart file: %s", filename.c_str());
+		Director::getInstance()->popScene();
+		return;
+	}
 	//字符串转化为float，扔进list
 	char Temporary[12] = { 0 };
 	int i, tk;
@@ -533,8 +626,16 @@ void GamePlay::GameEnd()
 	auto GameName = Label::createWithTTF(Filename, "fonts/arial.ttf", 42);
 	GameEnd->addChild(GameName, 1);
 	GameName->setPosition(Vec2(710, 405));
-	sprintf(Temporary, " Lv.%d", RecJson["Escaping Gravity -TheFatRat"]["Diff"][Diff.c_str()].GetInt());
-	auto GameDiff = Label::createWithTTF(Diff + Temporary, "fonts/arial.ttf", 42);
+	// 修改评级显示部分
+	std::string levelText = Diff;
+	if (RecJson.HasMember(Filename.c_str()) &&
+		RecJson[Filename.c_str()].HasMember("Diff") &&
+		RecJson[Filename.c_str()]["Diff"].HasMember(Diff.c_str())) {
+		sprintf(Temporary, " Lv.%d", RecJson[Filename.c_str()]["Diff"][Diff.c_str()].GetInt());
+		levelText += Temporary;
+	}
+
+	auto GameDiff = Label::createWithTTF(levelText, "fonts/arial.ttf", 42);
 	GameDiff->setAnchorPoint(Vec2(1, 0.5));
 	GameEnd->addChild(GameDiff, 1);
 	GameDiff->setPosition(Vec2(955, 345));
@@ -577,23 +678,96 @@ void GamePlay::GameEnd()
 	GameLevel->setPosition(Vec2(620, 680));
 
 	//结算到文件
-	if (RecJson[Filename.c_str()]["Score"][Diff.c_str()].GetInt() < Play_Score)
-	{
-		RecJson[Filename.c_str()]["Score"][Diff.c_str()].SetInt(Play_Score);
-		RecJson[Filename.c_str()]["Level"][Diff.c_str()].SetString(Play_level.c_str(), Play_level.length());
+	if (RecJson.HasMember(Filename.c_str())) {
+		if (RecJson[Filename.c_str()].HasMember("Score") &&
+			RecJson[Filename.c_str()]["Score"].HasMember(Diff.c_str())) {
+			if (RecJson[Filename.c_str()]["Score"][Diff.c_str()].GetInt() < Play_Score) {
+				RecJson[Filename.c_str()]["Score"][Diff.c_str()].SetInt(Play_Score);
+				RecJson[Filename.c_str()]["Level"][Diff.c_str()].SetString(Play_level.c_str(), Play_level.length());
+			}
+		}
+		else {
+			// 如果不存在对应的难度记录，创建它
+			if (!RecJson[Filename.c_str()].HasMember("Score")) {
+				rapidjson::Value scoreObj(rapidjson::kObjectType);
+				RecJson[Filename.c_str()].AddMember("Score", scoreObj, RecJson.GetAllocator());
+			}
+			if (!RecJson[Filename.c_str()].HasMember("Level")) {
+				rapidjson::Value levelObj(rapidjson::kObjectType);
+				RecJson[Filename.c_str()].AddMember("Level", levelObj, RecJson.GetAllocator());
+			}
+			if (!RecJson[Filename.c_str()].HasMember("Diff")) {
+				rapidjson::Value diffObj(rapidjson::kObjectType);
+				RecJson[Filename.c_str()].AddMember("Diff", diffObj, RecJson.GetAllocator());
+			}
+
+			RecJson[Filename.c_str()]["Score"].AddMember(
+				rapidjson::Value(Diff.c_str(), RecJson.GetAllocator()).Move(),
+				rapidjson::Value(Play_Score).Move(),
+				RecJson.GetAllocator()
+			);
+			RecJson[Filename.c_str()]["Level"].AddMember(
+				rapidjson::Value(Diff.c_str(), RecJson.GetAllocator()).Move(),
+				rapidjson::Value(Play_level.c_str(), RecJson.GetAllocator()).Move(),
+				RecJson.GetAllocator()
+			);
+
+			// 这里需要根据实际谱面难度设置Diff值，你可能需要从谱面文件中读取
+			int diffValue = 0;
+			if (Diff == "Ez") diffValue = 3;
+			else if (Diff == "Hd") diffValue = 6;
+			else if (Diff == "In") diffValue = 9;
+
+			RecJson[Filename.c_str()]["Diff"].AddMember(
+				rapidjson::Value(Diff.c_str(), RecJson.GetAllocator()).Move(),
+				rapidjson::Value(diffValue).Move(),
+				RecJson.GetAllocator()
+			);
+		}
 	}
-	//将json数据重新写入文件中
-	StringBuffer buffer;
-	rapidjson::Writer<StringBuffer> writer(buffer);
-	RecJson.Accept(writer);
-	//FILE* Readfile = fopen("Resources/Record/GameRecord.json", "wb");
-	//不知道为什么在这cocos2d-x不能直接用相对路径
-	// 还是不行，相对路径方案失败了
-	// 在vs，直接打开exe，还是steam，它们是各不相同的相对路径读取
-	std::string filepath = FileUtils::getInstance()->fullPathForFilename("Record/GameRecord.json");
-	FILE* Readfile = fopen(filepath.c_str(), "wb");
-	fputs(buffer.GetString(), Readfile);
-	fclose(Readfile);
+	else {
+		// 如果歌曲记录不存在，创建完整的记录结构
+		rapidjson::Value songObj(rapidjson::kObjectType);
+
+		// 创建Score对象
+		rapidjson::Value scoreObj(rapidjson::kObjectType);
+		scoreObj.AddMember(
+			rapidjson::Value(Diff.c_str(), RecJson.GetAllocator()).Move(),
+			rapidjson::Value(Play_Score).Move(),
+			RecJson.GetAllocator()
+		);
+
+		// 创建Level对象
+		rapidjson::Value levelObj(rapidjson::kObjectType);
+		levelObj.AddMember(
+			rapidjson::Value(Diff.c_str(), RecJson.GetAllocator()).Move(),
+			rapidjson::Value(Play_level.c_str(), RecJson.GetAllocator()).Move(),
+			RecJson.GetAllocator()
+		);
+
+		// 创建Diff对象
+		rapidjson::Value diffObj(rapidjson::kObjectType);
+		int diffValue = 0;
+		if (Diff == "Ez") diffValue = 3;
+		else if (Diff == "Hd") diffValue = 6;
+		else if (Diff == "In") diffValue = 9;
+		diffObj.AddMember(
+			rapidjson::Value(Diff.c_str(), RecJson.GetAllocator()).Move(),
+			rapidjson::Value(diffValue).Move(),
+			RecJson.GetAllocator()
+		);
+
+		songObj.AddMember("Score", scoreObj, RecJson.GetAllocator());
+		songObj.AddMember("Level", levelObj, RecJson.GetAllocator());
+		songObj.AddMember("Diff", diffObj, RecJson.GetAllocator());
+
+		RecJson.AddMember(
+			rapidjson::Value(Filename.c_str(), RecJson.GetAllocator()).Move(),
+			songObj.Move(),
+			RecJson.GetAllocator()
+		);
+	}
+
 }
 
 void GamePlay::GamePause(Ref* pSender)

@@ -9,6 +9,12 @@
 USING_NS_CC;
 
 using namespace CocosDenshion;
+using namespace rapidjson;
+
+extern std::string Diff;
+extern std::string Filename;
+extern int PLay_Back;
+extern float Play_Sp;
 
 Scene* MenuPick_Custom::createScene()
 {
@@ -76,11 +82,10 @@ bool MenuPick_Custom::init()
     this->addChild(BackGround, 2, 2);
 
     // 默认难度选择
-    auto Pick_diff = Sprite::create("Cover/In1.png");
+    auto Pick_diff = Sprite::create("Cover/In2.png");
     this->addChild(Pick_diff, 4, 3);
     Pick_diff->setPosition(BackGround->getPosition() + Vec2(110, -25));
 
-    // 等级、分数和难度标签（占位）
     auto GameLevel = Label::createWithTTF(" ", "fonts/arial.ttf", 48);
     this->addChild(GameLevel, 4, 6);
     GameLevel->setAnchorPoint(Vec2(0, 0.5));
@@ -96,11 +101,39 @@ bool MenuPick_Custom::init()
     GameDiff->setAnchorPoint(Vec2(0, 0.5));
     GameDiff->setPosition(Pick_diff->getPosition() + Vec2(125, 0));
 
-    // 歌曲封面（默认）
-    auto PickSprite1 = Sprite::create("Cover/Bad Apple -TouHou.png"); // 使用默认图片
-    PickSprite1->setScale(0.4);
-    PickSprite1->setPosition(Vec2(visibleSize.width / 2 + 400, visibleSize.height / 2));
-    this->addChild(PickSprite1, 3, 7);
+    auto Ez_Diff = MenuItemImage::create("Cover/Ez1.png", "Cover/Ez1.png",
+        CC_CALLBACK_0(MenuPick_Custom::pickdiffprer, this, 1));
+    auto Hd_Diff = MenuItemImage::create("Cover/Hd1.png", "Cover/Hd1.png",
+        CC_CALLBACK_0(MenuPick_Custom::pickdiffprer, this, 2));
+    auto In_Diff = MenuItemImage::create("Cover/In1.png", "Cover/In1.png",
+        CC_CALLBACK_0(MenuPick_Custom::pickdiffprer, this, 3));
+    auto Difficluty = Menu::create(Ez_Diff, Hd_Diff, In_Diff, NULL);
+    Difficluty->setPosition(Vec2(0, 0));
+    Ez_Diff->setPosition(BackGround->getPosition() + Vec2(25, -25));
+    Hd_Diff->setPosition(Ez_Diff->getPosition() + Vec2(85, 0));
+    In_Diff->setPosition(Hd_Diff->getPosition() + Vec2(85, 0));
+    this->addChild(Difficluty, 3);
+
+    auto Speed = Sprite::create("Cover/Butt/Speed.png");
+    Speed->setAnchorPoint(Vec2(0, 1));
+    Speed->setPosition(BackGround->getPosition() + Vec2(0, -80));
+    this->addChild(Speed, 3);
+    auto Sp_Left = MenuItemImage::create("Cover/Butt/Speed_Left.png", "Cover/Butt/Speed_Left.png",
+        CC_CALLBACK_0(MenuPick_Custom::pickspeed, this, 1));
+    auto Sp_Right = MenuItemImage::create("Cover/Butt/Speed_Right.png", "Cover/Butt/Speed_Right.png",
+        CC_CALLBACK_0(MenuPick_Custom::pickspeed, this, 2));
+    Sp_Left->setAnchorPoint(Vec2(0, 0));
+    Sp_Right->setAnchorPoint(Vec2(1, 0));
+    auto SpeedPick = Menu::create(Sp_Left, Sp_Right, NULL);
+    SpeedPick->setPosition(Vec2(0, 0));
+    Sp_Left->setPosition(Speed->getPosition() + Vec2(0, -50));
+    Sp_Right->setPosition(Speed->getPosition() + Vec2(100, -50));
+    this->addChild(SpeedPick, 3);
+    //显示速度文本
+    auto GameSp = Label::createWithTTF(" ", "fonts/Saira-Light.ttf", 20);
+    GameSp->setColor(Color3B::BLACK);
+    GameSp->setPosition(Speed->getPosition() + Vec2(50, -33));
+    this->addChild(GameSp, 3, 9);
 
     // 箭头指示器
     auto Pick_Arrow = Sprite::create("Cover/Arrow.png");
@@ -123,7 +156,10 @@ bool MenuPick_Custom::init()
     //创建键盘监听事件
     auto listener = EventListenerKeyboard::create();
     listener->onKeyReleased = [=](EventKeyboard::KeyCode keyCode, Event* event) {
-
+        if (keyCode == EventKeyboard::KeyCode::KEY_ENTER) {
+            SimpleAudioEngine::getInstance()->playEffect("Music file/Pick.mp3");
+            this->gameplay(this);
+        }
         if (keyCode == EventKeyboard::KeyCode::KEY_ESCAPE)
         {
             SimpleAudioEngine::getInstance()->playEffect("Music file/Pick.mp3");
@@ -161,14 +197,24 @@ bool MenuPick_Custom::init()
         };
     _eventDispatcher->addEventListenerWithSceneGraphPriority(scrollListener, this);
 
-    // 在 init() 方法最后添加
     if (!songList.empty()) {
         // 默认选中第一个歌曲
         _currentSelectedIndex = 1;
         _currentSelectedSong = songList[0];
         updateSongCover(_currentSelectedSong);
         updateArrowPosition(_currentSelectedIndex);
+    
+    // 自动调用第一个按钮的点击逻辑来初始化所有数据
+    music_name = songList[0]; // 设置 music_name
+    onSongButtonClicked(1, songList[0]); // 模拟点击第一个按钮
+
+    // 强制立即更新一次难度和分数显示
+    this->scheduleOnce([this](float dt) {
+        this->pickdifficulty(0);
+        }, 0.1f, "initial_update");
     }
+
+    this->schedule(CC_SCHEDULE_SELECTOR(MenuPick_Custom::pickdifficulty));
 
     return true;
 }
@@ -220,12 +266,6 @@ std::vector<std::string> MenuPick_Custom::getCustomSongs()
     std::sort(songs.begin(), songs.end());
 
     return songs;
-}
-
-void MenuPick_Custom::backmeun()
-{
-    // 关闭场景或执行其他操作
-    Director::getInstance()->popScene();
 }
 
 // CustomSongButton 类的实现
@@ -287,11 +327,9 @@ void MenuPick_Custom::onSongButtonClicked(int index, const std::string& songName
     // 更新当前选中的索引和歌曲名
     _currentSelectedIndex = index;
     _currentSelectedSong = songName;
+    music_name = songName;
 
-    // 切换曲绘
     updateSongCover(songName);
-
-    // 更新箭头位置（如果需要）
     updateArrowPosition(index);
 }
 
@@ -336,7 +374,156 @@ void MenuPick_Custom::updateArrowPosition(int index)
     }
 }
 
+void MenuPick_Custom::pickdiffprer(int pick)
+{
+    Pick_diff = pick;
+    auto background = (Sprite*)this->getChildByTag(2);
+    this->getChildByTag(3)->removeFromParentAndCleanup(true);
+    if (Pick_diff == 1)
+    {
+        auto Pick_diff = Sprite::create("Cover/Ez2.png");
+        this->addChild(Pick_diff, 4, 3);
+        Pick_diff->setPosition(background->getPosition() + Vec2(25, -25));
+    }
+    else if (Pick_diff == 2)
+    {
+        auto Pick_diff = Sprite::create("Cover/Hd2.png");
+        this->addChild(Pick_diff, 4, 3);
+        Pick_diff->setPosition(background->getPosition() + Vec2(110, -25));
+    }
+    else if (Pick_diff == 3)
+    {
+        auto Pick_diff = Sprite::create("Cover/In2.png");
+        this->addChild(Pick_diff, 4, 3);
+        Pick_diff->setPosition(background->getPosition() + Vec2(195, -25));
+    }
+}
+
+void MenuPick_Custom::pickspeed(int pick)
+{
+    Rec = FileUtils::getInstance()->getStringFromFile("Record/GameSet.json");
+    RecJson.Parse<rapidjson::kParseDefaultFlags>(Rec.c_str());
+    if (pick == 1 && Play_Sp > 1.05)
+    {
+        float Speed = Play_Sp - 0.1f;
+        RecJson["Speed"].SetFloat(Speed);
+    }
+    if (pick == 2 && Play_Sp < 2.95)
+    {
+        float Speed = Play_Sp + 0.1f;
+        RecJson["Speed"].SetFloat(Speed);
+    }
+    //将json数据重新写入文件中
+    StringBuffer buffer;
+    rapidjson::Writer<StringBuffer> writer(buffer);
+    RecJson.Accept(writer);
+    std::string filepath = FileUtils::getInstance()->fullPathForFilename("Record/GameSet.json");
+    FILE* Readfile = fopen(filepath.c_str(), "wb");
+    fputs(buffer.GetString(), Readfile);
+    fclose(Readfile);
+}
+
+void MenuPick_Custom::pickdifficulty(float dt)
+{
+    // 检查自定义歌曲的JSON文件是否存在
+    std::string recordPath = "Custom/" + _currentSelectedSong + "/record.json";
+    std::string defaultPath = "Record/Default.json";
+
+    // 先尝试读取自定义歌曲的JSON文件
+    Rec = FileUtils::getInstance()->getStringFromFile(recordPath);
+
+    // 如果自定义文件不存在，则使用默认文件
+    if (Rec.empty()) {
+        js_exist=0;
+        Rec = FileUtils::getInstance()->getStringFromFile(defaultPath);
+    }
+    else { js_exist = 1; }
+
+    // 解析JSON
+    RecJson.Parse<rapidjson::kParseDefaultFlags>(Rec.c_str());
+
+    auto background = (Sprite*)this->getChildByTag(2);
+    auto gamescore = (Label*)this->getChildByTag(4);
+    auto gamediff = (Label*)this->getChildByTag(5);
+    auto gameLevel = (Label*)this->getChildByTag(6);
+
+    char Temporary[32];
+
+    if (js_exist == 0)
+    {
+        sprintf(Temporary, "%08d", RecJson["Score"]["Ez"].GetInt());
+        gamescore->setString(Temporary);
+        sprintf(Temporary, "Lv.%d", RecJson["Diff"]["Ez"].GetInt());
+        gamediff->setString(Temporary);
+        sprintf(Temporary, "%s", RecJson["Level"]["Ez"].GetString());
+        gameLevel->setString(Temporary);
+    }
+   else if (Pick_diff == 1)
+    {
+        sprintf(Temporary, "%08d", RecJson[music_name.c_str()]["Score"]["Ez"].GetInt());
+        gamescore->setString(Temporary);
+        sprintf(Temporary, "Lv.%d", RecJson[music_name.c_str()]["Diff"]["Ez"].GetInt());
+        gamediff->setString(Temporary);
+        sprintf(Temporary, "%s", RecJson[music_name.c_str()]["Level"]["Ez"].GetString());
+        gameLevel->setString(Temporary);
+    }
+    else if (Pick_diff == 2)
+    {
+        sprintf(Temporary, "%08d", RecJson[music_name.c_str()]["Score"]["Hd"].GetInt());
+        gamescore->setString(Temporary);
+        sprintf(Temporary, "Lv.%d", RecJson[music_name.c_str()]["Diff"]["Hd"].GetInt());
+        gamediff->setString(Temporary);
+        sprintf(Temporary, "%s", RecJson[music_name.c_str()]["Level"]["Hd"].GetString());
+        gameLevel->setString(Temporary);
+    }
+    else if (Pick_diff == 3)
+    {
+        sprintf(Temporary, "%08d", RecJson[music_name.c_str()]["Score"]["In"].GetInt());
+        gamescore->setString(Temporary);
+        sprintf(Temporary, "Lv.%d", RecJson[music_name.c_str()]["Diff"]["In"].GetInt());
+        gamediff->setString(Temporary);
+        sprintf(Temporary, "%s", RecJson[music_name.c_str()]["Level"]["In"].GetString());
+        gameLevel->setString(Temporary);
+    }
+
+    //更新速度（这部分不变）
+    Rec = FileUtils::getInstance()->getStringFromFile("Record/GameSet.json");
+    RecJson.Parse<rapidjson::kParseDefaultFlags>(Rec.c_str());
+    Play_Sp = RecJson["Speed"].GetFloat();
+    auto gamespeed = (Label*)this->getChildByTag(9);
+    sprintf(Temporary, "%.1f", Play_Sp);
+    gamespeed->setString(Temporary);
+}
+
+
+
 void MenuPick_Custom::gameplay(Ref* pSender)
 {
+   
+
+    // 设置全局文件名 - 使用自定义歌曲的文件夹名
+    Filename = _currentSelectedSong;
+
+    // 设置难度
+    if (Pick_diff == 1)
+    {
+        Diff = "Ez";
+    }
+    else if (Pick_diff == 2)
+    {
+        Diff = "Hd";
+    }
+    else if (Pick_diff == 3)
+    {
+        Diff = "In";
+    }
+
+    Scene* scene = GamePlay::createScene();
+    Director::getInstance()->pushScene(TransitionFade::create(1.5, scene));
+}
+
+void MenuPick_Custom::backmeun()
+{
+    // 关闭场景或执行其他操作
     Director::getInstance()->popScene();
 }
