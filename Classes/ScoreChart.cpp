@@ -258,3 +258,65 @@ void ScoreChart::drawTrendLine(DrawNode* drawNode) {
     // 绘制虚线趋势线
     drawDashedLine(drawNode, Vec2(actualX1, actualY1), Vec2(actualX2, actualY2), Color4F(1, 1, 1, 0.6f), 2.0f);
 }
+
+void ScoreChart::drawLabels() {
+    // Y轴标签（分数）
+    int yLabels = 4;
+    for (int i = 0; i <= yLabels; i++) {
+        float scoreValue = _minScore + (i * (_maxScore - _minScore)) / yLabels;
+        char scoreText[32];
+        sprintf(scoreText, "%.1f", scoreValue);
+        
+        auto scoreLabel = Label::createWithSystemFont(scoreText, "Arial", 10);
+        float y = (i * _chartSize.height) / yLabels;
+        scoreLabel->setPosition(Vec2(25, y));
+        scoreLabel->setColor(Color3B(200, 200, 200));
+        this->addChild(scoreLabel);
+        
+        // Y轴刻度线
+        auto tickDraw = DrawNode::create();
+        tickDraw->drawLine(Vec2(0, y), Vec2(5, y), Color4F(1, 1, 1, 0.5f));
+        this->addChild(tickDraw);
+    }
+    
+    // X轴标签（游戏次数）
+    if (_dataPointCount > 1) {
+        int xLabels = std::min(_dataPointCount - 1, 5);
+        for (int i = 0; i <= xLabels; i++) {
+            int dataIndex = (i * (_dataPointCount - 1)) / xLabels;
+            if (dataIndex < _timeLabels.size() && !_timeLabels[dataIndex].empty()) {
+                auto timeLabel = Label::createWithSystemFont(_timeLabels[dataIndex], "Arial", 9);
+                float x = (dataIndex * _chartSize.width) / (_dataPointCount - 1);
+                timeLabel->setPosition(Vec2(x, -12));
+                timeLabel->setColor(Color3B(150, 150, 150));
+                this->addChild(timeLabel);
+                
+                // X轴刻度线
+                auto tickDraw = DrawNode::create();
+                tickDraw->drawLine(Vec2(x, 0), Vec2(x, 5), Color4F(1, 1, 1, 0.5f));
+                this->addChild(tickDraw);
+            }
+        }
+    }
+    
+    // 轴标题
+    auto yAxisTitle = Label::createWithSystemFont("Score", "Arial", 10);
+    yAxisTitle->setPosition(Vec2(15, _chartSize.height/2));
+    yAxisTitle->setRotation(-90);
+    yAxisTitle->setColor(Color3B(200, 200, 255));
+    this->addChild(yAxisTitle);
+    
+    auto xAxisTitle = Label::createWithSystemFont("Game Session", "Arial", 10);
+    xAxisTitle->setPosition(Vec2(_chartSize.width/2, -20));
+    xAxisTitle->setColor(Color3B(200, 200, 255));
+    this->addChild(xAxisTitle);
+    
+    // 图例说明
+    if (_dataPointCount >= 2) {
+        auto legend = Label::createWithSystemFont("Green=Progress  Red=Decline", "Arial", 9);
+        legend->setPosition(Vec2(_chartSize.width - 80, _chartSize.height - 10));
+        legend->setColor(Color3B(180, 180, 180));
+        this->addChild(legend);
+    }
+}
+
