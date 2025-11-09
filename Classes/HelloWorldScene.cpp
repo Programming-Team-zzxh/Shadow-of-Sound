@@ -36,6 +36,8 @@ bool HelloWorld::init()
         CC_CALLBACK_1(HelloWorld::gamemyself, this));//本人
     auto KeyItem = MenuItemImage::create("Picture/Butt/KeyConfig.png", "Picture/Butt/KeyConfig.png",
         CC_CALLBACK_1(HelloWorld::keyconfig, this));//Create new KeyConfig button
+    auto ScoreItem = MenuItemImage::create("Picture/Butt/Score.png", "Picture/Butt/Score.png",
+         CC_CALLBACK_1(HelloWorld::gameScoreStatistics, this));//成绩查询
 
     SetItem->setAnchorPoint(Vec2(1, 0));
     SetItem->setPosition(Vec2(visibleSize.width - 10, 10));
@@ -45,9 +47,11 @@ bool HelloWorld::init()
     MyItem->setPosition(Vec2(visibleSize.width - 150, 10));
     KeyItem->setAnchorPoint(Vec2(1, 0));
     KeyItem->setPosition(Vec2(visibleSize.width - 220, 10)); //Set button position
+    ScoreItem->setAnchorPoint(Vec2(1, 0));
+    ScoreItem->setPosition(Vec2(visibleSize.width - 290, 10)); // 新按钮位置
 
     // create menu, it's an autorelease object
-    auto menu = Menu::create(SetItem, StaItem,MyItem,KeyItem, NULL);
+    auto menu = Menu::create(SetItem, StaItem,MyItem,KeyItem,ScoreItem, NULL);
     menu->setPosition(Vec2::ZERO);
     this->addChild(menu, 1);
 

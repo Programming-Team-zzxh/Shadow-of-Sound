@@ -4,6 +4,8 @@
 #include "Note_Hold.h"
 #include "KeyConfig.h" 
 #include "winuser.h"
+#include <cocos/editor-support/cocostudio/SimpleAudioEngine.h>
+#include "ScoreSystem.h"
 
 #include <cocos/editor-support/cocostudio/SimpleAudioEngine.h>
 using namespace CocosDenshion;
@@ -11,13 +13,13 @@ using namespace rapidjson;
 
 USING_NS_CC;
 
-int Note_strack[4] = { 0 };//杞ㄩ亾
-float Play_Sp;//閫熷害璋冭妭
-extern std::string Diff;//闅惧害鐩稿叧
-extern std::string Filename;//鏂囦欢鍚�
-bool Play_TimeStop = false;//鏃跺仠
-bool Play_TimeResume = false;//鏃剁画
-int PLay_Back = 0;//鍒ゆ柇杩斿洖/閲嶅紑
+int Note_strack[4] = { 0 };//轨道
+float Play_Sp;//速度调节
+extern std::string Diff;//难度相关
+extern std::string Filename;//文件名
+bool Play_TimeStop = false;//时停
+bool Play_TimeResume = false;//时续
+int PLay_Back = 0;//判断返回/重开
 
 Scene* GamePlay::createScene()
 {
@@ -34,7 +36,7 @@ bool GamePlay::init()
 	auto visibleSize = Director::getInstance()->getVisibleSize();
 	Vec2 origin = Director::getInstance()->getVisibleOrigin();
 
-	//Background灞�,tag0,鍏朵笅鐨凩ine,tag0,BackLine,tag1
+	//Background层,tag0,其下的Line,tag0,BackLine,tag1
 	auto Backlayer = LayerColor::create(Color4B::WHITE);
 	std::string filename = getCoverFilePath();
 	auto SkyStriker = Sprite::create(filename);
@@ -52,17 +54,17 @@ bool GamePlay::init()
 	(visibleSize.width / 2 + 303, 146), Color4F::WHITE);
 	Backlayer->addChild(Line, 1, 0);
 	this->addChild(Backlayer, 1, 0);
-	//鑳屾櫙
+	//背景
 	auto BackLine = Sprite::create("Note icon/BackLine2.png");
 	BackLine->setAnchorPoint(Vec2(0, 1));
 	BackLine->setPosition(Vec2(0, visibleSize.height));
 	BackLine->setOpacity(200);
 	Backlayer->addChild(BackLine, 0, 1);
 
-	//Note闊崇灞�
+	//Note音符层
 	auto Notelayer = LayerColor::create();
 	this->addChild(Notelayer, 1, 5);
-	//鐏厜
+	//灯光
 	auto LightingL1 = Sprite::create("Note icon/Left_1.png");
 	LightingL1->setAnchorPoint(Vec2(0, 0));
 	LightingL1->setPosition(Vec2(visibleSize.width / 2 - 303, 0));
@@ -139,20 +141,20 @@ bool GamePlay::init()
 	Combo->setTextColor(Color4B(139,215,250,255));
 	auto Number_Combo = Label::createWithTTF(" ", "fonts/arial.ttf", 48);
 	Number_Combo->setTextColor(Color4B(139, 215, 250, 255));
-	//Notelayer,tag5,瀹冪殑Combo,tag0,Number_Combo,tag1,瀹冪殑Score,tag2,缁撶畻鐢婚潰,tag3
+	//Notelayer,tag5,它的Combo,tag0,Number_Combo,tag1,它的Score,tag2,结算画面,tag3
 	Notelayer->addChild(Combo, 3, 0);
 	Notelayer->addChild(Number_Combo, 3, 1);
 	Combo->setPosition(Vec2(visibleSize.width / 2, 1020));
 	Number_Combo->setPosition(Vec2(visibleSize.width / 2, 965));
 	
-	//璁″垎
+	//计分
 	auto ScoreLable = Label::createWithTTF(" ", "fonts/Saira-Regular.ttf", 30);
 	ScoreLable->setTextColor(Color4B::WHITE);
 	Notelayer->addChild(ScoreLable, 3, 2);
 	ScoreLable->setAnchorPoint(Vec2(1, 1));
 	ScoreLable->setPosition(Vec2(visibleSize.width/2+300, visibleSize.height));
 
-	/*澧炲姞涓�涓鏃跺櫒,tag1
+	/*增加一个计时器,tag1
 	auto Timelabel = Label::createWithTTF("Time:0", "fonts/Marker Felt.ttf", 24);
 	Timelabel->setPosition(Vec2(visibleSize.width / 2, visibleSize.height / 2));
 	Timelabel->setTextColor(Color4B::WHITE);
@@ -160,7 +162,7 @@ bool GamePlay::init()
 
 	this->schedule(CC_SCHEDULE_SELECTOR(GamePlay::Update_count));
 
-	//閫熷害,Ez4,Hd6,In8
+	//速度,Ez4,Hd6,In8
 	if (Diff == "Ez")
 		Play_speed = 4;
 	else if(Diff == "Hd")
@@ -168,7 +170,7 @@ bool GamePlay::init()
 	else
 		Play_speed = 8;
 
-	/*娴嬭瘯璋卞瓙鐢�
+	/*测试谱子用
 	auto MusicFile = FileUtils::getInstance();
 	auto Musicscore = MusicFile->getStringFromFile("Music score/Escaping Gravity -TheFatRat.txt");
 	auto Timelabel1 = Label::createWithTTF(Musicscore, "fonts/Marker Felt.ttf", 24);
@@ -176,10 +178,10 @@ bool GamePlay::init()
 	Timelabel1->setTextColor(Color4B::BLACK);
 	this->addChild(Timelabel1, 1, 2);*/
 
-	//鐢熸垚涔愯氨
+	//生成乐谱
 	GamePre();
 
-	/*鍥惧儚娴嬭瘯
+	/*图像测试
 	auto Azelia = Sprite::create("Note icon/Note_tap.png");
 	Azelia->setAnchorPoint(Vec2(0, 1));
 	Azelia->setPosition(Vec2(visibleSize.width / 2, 105));
@@ -381,9 +383,9 @@ void GamePlay::Update_count(float dt)
 		Play_TimeStop = false;
 		SimpleAudioEngine::getInstance()->resumeBackgroundMusic();
 	}
-	else if (Play_TimeStop)return;//鏃跺仠
+	else if (Play_TimeStop)return;//时停
 
-	//瀹氱偣鎾斁闊充箰
+	//定点播放音乐
 	else if (Game_time == (int)((Director::getInstance()->getVisibleSize().height - 165)
 		/ (Play_speed * Play_Sp)))
 	{
@@ -398,7 +400,7 @@ void GamePlay::Update_count(float dt)
 			Play_Start = true;
 		}
 	}
-	//缁撴潫鍔�
+	//结束力
 	else if ((!SimpleAudioEngine::getInstance()->isBackgroundMusicPlaying()) 
 		&& Play_Start)
 	{
@@ -410,14 +412,14 @@ void GamePlay::Update_count(float dt)
 	Game_time++;
 
 	auto visibleSize = Director::getInstance()->getVisibleSize();
-	/*娴嬭瘯
-	//鑾峰彇 tag=1 鐨凩abel
+	/*测试
+	//获取 tag=1 的Label
 	char time[32];
 	auto Timelabel = (Label*)this->getChildByTag(1);
 	sprintf(time, "Time:%08d", (int)Game_time/120);
 	Timelabel->setString(time);*/
 
-	//鏇存柊涓�涓婥ombo鍊�
+	//更新一下Combo值
 	char combo[32];
 	auto ComboNumer = (Label*)(Layer*)this->getChildByTag(5)->getChildByTag(1);
 	sprintf(combo, "%d", Play_Combo);
@@ -426,7 +428,7 @@ void GamePlay::Update_count(float dt)
 		Play_MaxCombo = Play_Combo;
 	static int Cb_one = 0;
 	static int Cb_two = 0;
-	//鐧綾ombo绮掑瓙鐗规晥
+	//百combo粒子特效
 	if (Play_Combo % 100 == 0 && Play_Combo!=0)
 	{
 		if (Cb_one == Cb_two)
@@ -440,16 +442,16 @@ void GamePlay::Update_count(float dt)
 		Cb_two++;
 	}
 
-	//鏇存柊鍒嗘暟
+	//更新分数
 	char score[32];
 	auto ScoreNumer = (Label*)(Layer*)this->getChildByTag(5)->getChildByTag(2);
 	sprintf(score, "%07d", Play_Score);
 	ScoreNumer->setString(score);
 
-	//鐢熸垚璋卞瓙
+	//生成谱子
 	if (Game_file.empty())
 		;
-	else if ((int)(Game_file.front()*120) == Game_time)//鐢熸垚鏃堕棿
+	else if ((int)(Game_file.front()*120) == Game_time)//生成时间
 	{
 		CreateNote(Game_time);
 	}
@@ -499,21 +501,21 @@ void GamePlay::CreateNote(int time)
 {
 	auto visibleSize = Director::getInstance()->getVisibleSize();
 	Game_file.pop_front();
-	int X = Game_file.front();//鐢熸垚杞ㄩ亾
+	int X = Game_file.front();//生成轨道
 	Game_file.pop_front();
-	float Speed = Game_file.front()*Play_Sp;//閫熷害
+	float Speed = Game_file.front()*Play_Sp;//速度
 	Game_file.pop_front();
-	int Y = (int)Game_file.front();//绫诲瀷
+	int Y = (int)Game_file.front();//类型
 	Game_file.pop_front();
 	if (Y == 1)//Tap
 	{
 		auto note = new Note(X, Y, Speed);
-		//浜嬪疄涓婏紝褰撴垜浠垱寤虹簿鐏垫椂锛宑ocos2dx宸茬粡甯垜浠仛濂戒簡缂撳瓨
+		//事实上，当我们创建精灵时，cocos2dx已经帮我们做好了缓存
 		note->initWithFile("Note icon/Note_tap.png");
-		//閿氱偣璁剧疆涓庣敓鎴愪綅缃�
+		//锚点设置与生成位置
 		note->setAnchorPoint(Vec2(0, 1));
 		note->setPosition(visibleSize.width / 2 - 455 + X * 152, visibleSize.height+15);
-		//鐢熸垚鍦∟ote灞�
+		//生成在Note层
 		auto Note_layer = (LayerColor*)this->getChildByTag(5);
 		Note_layer->addChild(note, 1);
 		note->Note_down();
@@ -533,7 +535,7 @@ void GamePlay::CreateNote(int time)
 	
 	
 	
-	//閫掑綊锛屽垽鏂槸鍚︽湁鍚屼竴鏃堕棿鐢熸垚鐨勯煶绗�
+	//递归，判断是否有同一时间生成的音符
 	if (!Game_file.empty())
 	{
 		if ((int)(Game_file.front() * 120) == time)
@@ -579,14 +581,14 @@ void GamePlay::GamePre()
 			tk = 0;
 			sscanf(Temporary, "%f", &tpr);
 			Game_file.push_back(tpr);
-			//璁＄畻鐗╅噺
+			//计算物量
 			Play_Toatal++;
 			memset(Temporary, 0, sizeof(Temporary));
 		}
 	}
 	Play_Toatal = Play_Toatal / 4;
 	Play_GetScore = 1000000 / Play_Toatal;
-	/*娴嬭瘯鐢�
+	/*测试用
 	char table[32];
 	auto Timelabel2 = (Label*)this->getChildByTag(2);
 	Timelabel2->setString(table);
@@ -620,7 +622,7 @@ void GamePlay::GameEnd()
 	GameScore->setPosition(Vec2(1130, 650));
 	sprintf(Temporary, "%d", Play_MaxCombo);
 	auto GameMaxCombo = Label::createWithTTF(Temporary, "fonts/Saira-Thin.ttf", 96);
-	//鍥犱负鎶楅敮榻夸細瀵艰嚧瀛椾綋妯＄硦锛屾墍浠ヤ笉寰椾笉鍙屽�嶅ぇ灏忕劧鍚庣缉灏�
+	//因为抗锯齿会导致字体模糊，所以不得不双倍大小然后缩小
 	GameMaxCombo->setScale(0.5);
 	GameEnd->addChild(GameMaxCombo, 1);
 	GameMaxCombo->setPosition(Vec2(836, 275));
@@ -662,7 +664,7 @@ void GamePlay::GameEnd()
 	GameEnd->addChild(GameDiff, 1);
 	GameDiff->setPosition(Vec2(955, 345));
 
-	//缁撶畻鍒嗘暟鍒拌瘎绾�
+	//结算分数到评级
 	auto GameLevel = Label::createWithTTF(" ", "fonts/Saira-Regular.ttf", 264);
 	std::string Play_level;
 	if (Play_Toatal == Play_Perfect)
@@ -805,6 +807,14 @@ void GamePlay::GameEnd()
 	else {
 		CCLOG("Failed to save record to: %s", filepath.c_str());
 	}
+  	//以下为新增代码！！！！！
+    // 添加到评分系统
+    int difficultyLevel = RecJson[Filename.c_str()]["Diff"][Diff.c_str()].GetInt();
+    ScoreSystem::getInstance()->addSongScore(Filename, Diff, Play_Score, difficultyLevel);
+
+     // 计算并显示前20平均分
+     float top20Average = ScoreSystem::getInstance()->calculateTop20AverageWithZeroPadding();
+     CCLOG("Top 20 Average Score: %.2f", top20Average);
 }
 
 void GamePlay::GamePause(Ref* pSender)
@@ -814,36 +824,36 @@ void GamePlay::GamePause(Ref* pSender)
 	TemperarySprite->runAction(Sequence::create(DelayTime::create(1.0f),
 		CallFunc::create(CC_CALLBACK_0(GamePlay::PauseAfter, this)), NULL));
 
-	/*鍥犱负new闊崇鐨勭紭鏁咃紝浼氬鑷达細
-		鏁� 鎹� 娉� 闇�
+	/*因为new音符的缘故，会导致：
+		数 据 泄 露
 
 	auto visibleSize = Director::getInstance()->getVisibleSize();
 	auto renderTexture = RenderTexture::create(visibleSize.width, visibleSize.height);
 	
 	this->pause();
-	renderTexture->begin();            //寮�濮嬫姄灞�
-	this->visit(); //閬嶅巻褰撳墠鍦烘櫙Scene鐨勫叏閮ㄥ瓙鑺傜偣淇℃伅锛岀敾鍏enderTexture涓�
-	renderTexture->end();				//缁撴潫鎶撳睆
+	renderTexture->begin();            //开始抓屏
+	this->visit(); //遍历当前场景Scene的全部子节点信息，画入renderTexture中
+	renderTexture->end();				//结束抓屏
 
 	Scene* scene = GamePause::createScene(renderTexture);
 
-	//涓婇潰鏂规硶琛屼笉閫氬氨鐩存帴鎴惂
+	//上面方法行不通就直接截吧
 	//utils::captureScreen(CC_CALLBACK_2(GamePlay::PauseAfter, this), "PauseScreenShot.png");
 
-	杩欏嚑涓柟妗堣Ban浜�
+	这几个方案被Ban了
 	*/
 }
 
 void GamePlay::PauseAfter()
 {
-	//鍓嶈溅涔嬮壌锛岃繖鍥炲緢闅惧唴瀛樻硠婕�
+	//前车之鉴，这回很难内存泄漏
 	auto visibleSize = Director::getInstance()->getVisibleSize();
 	auto renderTexture = RenderTexture::create(visibleSize.width, visibleSize.height);
 
 	this->pause();
-	renderTexture->begin();            //寮�濮嬫姄灞�
-	this->visit(); //閬嶅巻褰撳墠鍦烘櫙Scene鐨勫叏閮ㄥ瓙鑺傜偣淇℃伅锛岀敾鍏enderTexture涓�
-	renderTexture->end();				//缁撴潫鎶撳睆
+	renderTexture->begin();            //开始抓屏
+	this->visit(); //遍历当前场景Scene的全部子节点信息，画入renderTexture中
+	renderTexture->end();				//结束抓屏
 
 	Scene* scene = GamePause::createScene(renderTexture);
 	Director::getInstance()->pushScene(TransitionCrossFade::create(0.5, scene));
