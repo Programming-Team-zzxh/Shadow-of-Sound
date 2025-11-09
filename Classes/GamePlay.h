@@ -44,6 +44,13 @@ public:
     void PauseAfter();//暂停回调函数
     void GameEnd();//结束，进入结算界面
     CREATE_FUNC(GamePlay);
+
+private:
+    std::string getCustomSongPath();
+    std::string getMusicFilePath();
+    std::string getChartFilePath();
+    std::string getCoverFilePath();
+    std::string getRecordFilePath();
 };
 
 #endif
