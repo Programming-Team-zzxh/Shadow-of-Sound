@@ -3,23 +3,23 @@
 #include <cocos/editor-support/cocostudio/SimpleAudioEngine.h>
 using namespace CocosDenshion;
 
-extern int Note_strack[4];//4�����
+extern int Note_strack[4];//4条轨道
 extern bool Play_TimeStop;
 
 Note::Note(int x, int y, float speed)
 {
-	Note_x = x;//Track���
-	Note_y = y;//��������
-	Note_speed = speed;//�ٶ�
+	Note_x = x;//Track轨道
+	Note_y = y;//音符种类
+	Note_speed = speed;//速度
 }
 
 void Note::Note_down()
 {
 
 	//auto moveTo = MoveTo::create(2.0f, Vec3(250, 0, 1));
-	//Sequence������˳��ִ�У�CallFunc�ص��������ƶ�������ɺ����
+	//Sequence动作按顺序执行，CallFunc回调函数：移动动作完成后结束
 	//this->runAction(Sequence::create(moveTo, CallFunc::create(CC_CALLBACK_0(Note::Note_end, this)), NULL));
-	//����һ����ʱ��������״̬
+	//增加一个定时器，更新状态
 	this->schedule(CC_SCHEDULE_SELECTOR(Note::Note_update));
 
 }
@@ -28,8 +28,8 @@ void Note::Note_end()
 {
 
 	this->removeFromParentAndCleanup(true);
-	//����remove��parent���룬����clear�Լ�
-	//���ֱ��delete�Ļ����ᱨ��Ҫɾ���Ķ���ǰ������������״̬
+	//调用remove与parent分离，并且clear自己
+	//如果直接delete的话，会报错要删除的对象当前还是正在运行状态
 	delete this;
 
 }
@@ -43,15 +43,15 @@ void Note::Note_update(float dt)
 	this->setPosition(this->getPosition() + Vec2(0, -Note_speed));
 	
 	//PERFECT
-	//�ж�����80+-ms��9.6֡
+	//判定区间80+-ms，9.6帧
 	if (this->getPositionY() <= (165 + 9.6 * Speed) && this->getPositionY() >= (165 - 9.6 * Speed))
 	{
 		if ((Note_strack[0] == 1 && Note_x == 1)|| (Note_strack[1] == 1 && Note_x == 2) || 
 			(Note_strack[2] == 1 && Note_x == 3) || (Note_strack[3] == 1 && Note_x == 4))
 		{
-			//������Ч
+			//播放音效
 			SimpleAudioEngine::getInstance()->playEffect("Music file/Tap_Perfect.mp3");
-			//������Ч
+			//动作特效
 			auto Note_layer = (LayerColor*)this->getParent();
 			auto Icon = Sprite::create("Note icon/Note_Great.png");
 			Icon->setPosition(Vec2(Director::getInstance()->
@@ -63,15 +63,40 @@ void Note::Note_update(float dt)
 			auto spawn = Spawn::create(fade_1, rota, NULL);
 			auto keep = FadeTo::create(0.5f, 200);
 			auto fade_2 = FadeTo::create(0.8f, 0);
-			//Sequence������˳��ִ�У�CallFunc�ص��������ƶ�������ɺ����
+			//Sequence动作按顺序执行，CallFunc回调函数：移动动作完成后结束
 			Icon->runAction(Sequence::create(spawn, keep, fade_2, CallFunc::create(CC_CALLBACK_0(
 				Sprite::removeFromParent, Icon)), NULL));
-			//������Ч
+			//1. 创建新图片精灵（替换为你的新图片路径）
+			auto NewIcon = Sprite::create("Note icon/Note_Great1.png"); // 新图片路径
+			//2. 设置位置
+			NewIcon->setPosition(Vec2(Director::getInstance()->getVisibleSize().width / 2, 900));
+			//3. 初始状态：透明 + 轻微缩小（0.7倍，用于放大效果）
+			NewIcon->setOpacity(0);
+			NewIcon->setScale(0.7f);
+			//4. 添加到图层（z轴设为3，确保在现有元素上方）
+			Note_layer->addChild(NewIcon, 3);
+			
+			//5. 定义新图片的动画：淡入 + 放大
+			auto newFadeIn = FadeTo::create(0.2f, 255); // 0.2秒淡入（比现有稍快）
+			auto newScaleUp = ScaleTo::create(0.2f, 1.0f); // 0.2秒从0.7放大到1.0（微微放大）
+			auto newSpawn = Spawn::create(newFadeIn, newScaleUp, NULL); // 同步执行
+			//6. 保持显示一段时间后淡出
+			auto newKeep = DelayTime::create(0.4f); // 保持0.4秒
+			auto newFadeOut = FadeTo::create(0.6f, 0); // 0.6秒淡出
+			//7. 执行动画后移除
+			NewIcon->runAction(Sequence::create(
+				newSpawn,
+				newKeep,
+				newFadeOut,
+				CallFunc::create(CC_CALLBACK_0(Sprite::removeFromParent, NewIcon)),
+				NULL
+			));
+			//粒子特效
 			auto Particle = ParticleSystemQuad::create("Particle/Note_Perfect.plist");
 			Particle->setPosition(Point(Director::getInstance()->
 				getVisibleSize().width / 2 - 380 + X * 152, this->getPositionY() - 8));
 			Note_layer->addChild(Particle, 1);
-			//�ӷ֣��ҵ����ڵ�ĸ��ڵ㣬Ҳ����GamePlay
+			//加分！找到父节点的父节点，也就是GamePlay
 			auto PlayFather = ((GamePlay*)(LayerColor*)this->getParent()->getParent());
 			PlayFather->Play_Perfect++;
 			PlayFather->Play_Combo++;
@@ -81,7 +106,7 @@ void Note::Note_update(float dt)
 		}
 	}
 	//GRAET
-	//�ж�����200+-ms��24֡
+	//判定区间200+-ms，24帧
 	else if (this->getPositionY() <= (165 + 24 * Speed) && this->getPositionY() >= (165 - 24 * Speed))
 	{
 		if ((Note_strack[0] == 1 && Note_x == 1) || (Note_strack[1] == 1 && Note_x == 2) ||
@@ -103,6 +128,32 @@ void Note::Note_update(float dt)
 			Icon->runAction(Sequence::create(spawn, keep, fade_2, CallFunc::create(CC_CALLBACK_0(
 				Sprite::removeFromParent, Icon)), NULL));
 
+			//1. 创建新图片精灵（替换为你的新图片路径）
+			auto NewIcon = Sprite::create("Note icon/Note_Good1.png"); // 新图片路径
+			//2. 设置位置
+			NewIcon->setPosition(Vec2(Director::getInstance()->getVisibleSize().width / 2, 900));
+			//3. 初始状态：透明 + 轻微缩小（0.7倍，用于放大效果）
+			NewIcon->setOpacity(0);
+			NewIcon->setScale(0.7f);
+			//4. 添加到图层（z轴设为3，确保在现有元素上方）
+			Note_layer->addChild(NewIcon, 3);
+
+			//5. 定义新图片的动画：淡入 + 放大
+			auto newFadeIn = FadeTo::create(0.2f, 255); // 0.2秒淡入（比现有稍快）
+			auto newScaleUp = ScaleTo::create(0.2f, 1.0f); // 0.2秒从0.7放大到1.0（微微放大）
+			auto newSpawn = Spawn::create(newFadeIn, newScaleUp, NULL); // 同步执行
+			//6. 保持显示一段时间后淡出
+			auto newKeep = DelayTime::create(0.4f); // 保持0.4秒
+			auto newFadeOut = FadeTo::create(0.6f, 0); // 0.6秒淡出
+			//7. 执行动画后移除
+			NewIcon->runAction(Sequence::create(
+				newSpawn,
+				newKeep,
+				newFadeOut,
+				CallFunc::create(CC_CALLBACK_0(Sprite::removeFromParent, NewIcon)),
+				NULL
+			));
+
 			auto Particle = ParticleSystemQuad::create("Particle/Note_Good.plist");
 			Particle->setPosition(Point(Director::getInstance()->
 				getVisibleSize().width / 2 - 380 + X * 152, this->getPositionY() - 8));
@@ -110,25 +161,94 @@ void Note::Note_update(float dt)
 			auto PlayFather = ((GamePlay*)(LayerColor*)this->getParent()->getParent());
 			PlayFather->Play_Good++;
 			PlayFather->Play_Combo++;
-			PlayFather->Play_Score = PlayFather->Play_Score + PlayFather->Play_GetScore*0.65;
+			PlayFather->Play_Score = PlayFather->Play_Score + PlayFather->Play_GetScore * 0.65;
 			this->removeFromParentAndCleanup(true);
 			delete this;
 		}
 	}
-	//BAD
-	else if (this->getPositionY() < (165 - 24 * Speed))
+	//新增：BAD判定（不算连击、0分）
+		//判定区间：低于Great下限（165-24*Speed），高于Miss临界值（165-30*Speed）
+	else if (this->getPositionY() < (165 - 24 * Speed) && this->getPositionY() >= (165 - 30 * Speed))
 	{
+		if ((Note_strack[0] == 1 && Note_x == 1) || (Note_strack[1] == 1 && Note_x == 2) ||
+			(Note_strack[2] == 1 && Note_x == 3) || (Note_strack[3] == 1 && Note_x == 4))
+		{
+			auto Note_layer = (LayerColor*)this->getParent();
+			//Bad新图标（居中显示）
+			auto NewIcon = Sprite::create("Note icon/Note_Bad1.png"); // Bad新图片路径
+			NewIcon->setPosition(Vec2(Director::getInstance()->getVisibleSize().width / 2, 900));
+			NewIcon->setOpacity(0);
+			NewIcon->setScale(0.7f);
+			Note_layer->addChild(NewIcon, 3);
+
+			//Bad图标动画（与其他判定保持一致）
+			auto newFadeIn = FadeTo::create(0.2f, 255);
+			auto newScaleUp = ScaleTo::create(0.2f, 1.0f);
+			auto newSpawn = Spawn::create(newFadeIn, newScaleUp, NULL);
+			auto newKeep = DelayTime::create(0.4f);
+			auto newFadeOut = FadeTo::create(0.6f, 0);
+			NewIcon->runAction(Sequence::create(
+				newSpawn, newKeep, newFadeOut,
+				CallFunc::create(CC_CALLBACK_0(Sprite::removeFromParent, NewIcon)),
+				NULL
+			));
+
+			//Bad数据更新：算次数、0分、重置连击
+			auto PlayFather = ((GamePlay*)(LayerColor*)this->getParent()->getParent());
+			PlayFather->Play_Bad++; // 统计Bad次数
+			PlayFather->Play_Combo = 0; // 不算连击，重置连击数
+			// Play_Score 不累加（0分），无需额外代码
+			this->removeFromParentAndCleanup(true);
+			delete this;
+		}
+		}
+		//MISS（未击中或超出Bad判定下限）
+	else if (this->getPositionY() < (165 - 30 * Speed)) // 与Bad判定下限衔接)
+	{
+		// 检查对应轨道是否从未被按下（未击中）
+		bool isHit = (Note_strack[0] == 1 && Note_x == 1) ||
+			(Note_strack[1] == 1 && Note_x == 2) ||
+			(Note_strack[2] == 1 && Note_x == 3) ||
+			(Note_strack[3] == 1 && Note_x == 4);
+
+		if (!isHit)  // 未被击中 → 判定为Miss
+		{
+			auto Note_layer = (LayerColor*)this->getParent();
+
+			// 1. 显示Miss新图标（放大+淡入效果）
+			auto MissIcon = Sprite::create("Note icon/Note_Miss1.png");  // Miss图片路径
+			MissIcon->setPosition(Vec2(Director::getInstance()->getVisibleSize().width / 2, 900));  // 居中显示
+			MissIcon->setOpacity(0);
+			MissIcon->setScale(0.7f);
+			Note_layer->addChild(MissIcon, 3);
+
+			// 2. Miss图标动画（与之前的新图标动画一致）
+			auto fadeIn = FadeTo::create(0.2f, 255);
+			auto scaleUp = ScaleTo::create(0.2f, 1.0f);
+			auto spawn = Spawn::create(fadeIn, scaleUp, nullptr);
+			auto keep = DelayTime::create(0.4f);
+			auto fadeOut = FadeTo::create(0.6f, 0);
+			MissIcon->runAction(Sequence::create(
+				spawn, keep, fadeOut,
+				CallFunc::create(CC_CALLBACK_0(Sprite::removeFromParent, MissIcon)),
+				nullptr
+			));
+		}
+
 		((GamePlay*)(LayerColor*)this->getParent()->getParent())->Play_Pass++;
 		((GamePlay*)(LayerColor*)this->getParent()->getParent())->Play_Combo = 0;
 		this->removeFromParentAndCleanup(true);
-		//����remove��parent���룬����clear�Լ�
-		//���ֱ��delete�Ļ����ᱨ��Ҫɾ���Ķ���ǰ������������״̬
+		//调用remove与parent分离，并且clear自己
+		//如果直接delete的话，会报错要删除的对象当前还是正在运行状态
 		delete this;
-	}		
-	//�ڰ��°���������
+	}
+	//在按下按键后锁定
 	if (Note_strack[X - 1] == 1)
 	{
 		Note_strack[X - 1] = -1;
 	}
 
+
 }
+
+

@@ -14,11 +14,13 @@ public:
 
     void gamepick();
     
-    void gameset(Ref* pSender);//设置
+    void gameset(Ref* pSender);//脡猫脰脙
 
-    void gamesta(Ref* pSender);//统计
+    void gamesta(Ref* pSender);//脥鲁录脝
 
-    void gamemyself(Ref* pSender);//统计
+    void gamemyself(Ref* pSender);//脥鲁录脝
+
+    void keyconfig(cocos2d::Ref* pSender);//Create new KeyConfig button
 
     // implement the "static create()" method manually
     CREATE_FUNC(HelloWorld);

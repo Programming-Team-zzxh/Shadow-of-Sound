@@ -3,6 +3,7 @@
 #include "GameSet.h"
 #include "GameStastis.h"
 #include "GameMyself.h"
+#include "KeySettingScene.h"
 #include <cocos/editor-support/cocostudio/SimpleAudioEngine.h>
 using namespace CocosDenshion;
 
@@ -28,11 +29,15 @@ bool HelloWorld::init()
     //    you may modify it.
     // add a "close" icon to exit the progress. it's an autorelease object
     auto SetItem = MenuItemImage::create("Picture/Butt/Set.png","Picture/Butt/Set.png",
-        CC_CALLBACK_1(HelloWorld::gameset, this));//ÉèÖÃ
+        CC_CALLBACK_1(HelloWorld::gameset, this));//è®¾ç½®
     auto StaItem = MenuItemImage::create("Picture/Butt/Statistics.png", "Picture/Butt/Statistics.png",
-        CC_CALLBACK_1(HelloWorld::gamesta, this));//Í³¼Æ
+        CC_CALLBACK_1(HelloWorld::gamesta, this));//ç»Ÿè®¡
     auto MyItem = MenuItemImage::create("Picture/Butt/Myself.png", "Picture/Butt/Myself.png",
-        CC_CALLBACK_1(HelloWorld::gamemyself, this));//±¾ÈË
+        CC_CALLBACK_1(HelloWorld::gamemyself, this));//æœ¬äºº
+    auto KeyItem = MenuItemImage::create("Picture/Butt/KeyConfig.png", "Picture/Butt/KeyConfig.png",
+        CC_CALLBACK_1(HelloWorld::keyconfig, this));//Create new KeyConfig button
+    auto ScoreItem = MenuItemImage::create("Picture/Butt/Score.png", "Picture/Butt/Score.png",
+         CC_CALLBACK_1(HelloWorld::gameScoreStatistics, this));//æˆç»©æŸ¥è¯¢
 
     SetItem->setAnchorPoint(Vec2(1, 0));
     SetItem->setPosition(Vec2(visibleSize.width - 10, 10));
@@ -40,9 +45,13 @@ bool HelloWorld::init()
     StaItem->setPosition(Vec2(visibleSize.width - 80, 10));
     MyItem->setAnchorPoint(Vec2(1, 0));
     MyItem->setPosition(Vec2(visibleSize.width - 150, 10));
+    KeyItem->setAnchorPoint(Vec2(1, 0));
+    KeyItem->setPosition(Vec2(visibleSize.width - 220, 10)); //Set button position
+    ScoreItem->setAnchorPoint(Vec2(1, 0));
+    ScoreItem->setPosition(Vec2(visibleSize.width - 290, 10)); // æ–°æŒ‰é’®ä½ç½®
 
     // create menu, it's an autorelease object
-    auto menu = Menu::create(SetItem, StaItem,MyItem, NULL);
+    auto menu = Menu::create(SetItem, StaItem,MyItem,KeyItem,ScoreItem, NULL);
     menu->setPosition(Vec2::ZERO);
     this->addChild(menu, 1);
 
@@ -52,7 +61,7 @@ bool HelloWorld::init()
     label->setPosition(Vec2(origin.x + visibleSize.width/2, origin.y + visibleSize.height/4 - 
         label->getContentSize().height));
     this->addChild(label, 1);
-    //´´½¨Ò»¸ö¶¯»­Fade
+    //åˆ›å»ºä¸€ä¸ªåŠ¨ç”»Fade
     auto fade_1 = FadeTo::create(1.0f, 0);
     auto fade_2 = FadeTo::create(1.0f, 255);
     auto blink = Sequence::create(fade_1, fade_2, NULL);
@@ -69,14 +78,14 @@ bool HelloWorld::init()
     // add the sprite as a child to this layer
     this->addChild(sprite, 1);
 
-    //Ô¤¼ÓÔØÒôÐ§
+    //é¢„åŠ è½½éŸ³æ•ˆ
     SimpleAudioEngine::getInstance()->preloadEffect("Music file/Tap_Perfect.mp3");
     SimpleAudioEngine::getInstance()->preloadEffect("Music file/Tap_Good.mp3");
     SimpleAudioEngine::getInstance()->preloadEffect("Music file/Note_One.mp3");
     SimpleAudioEngine::getInstance()->preloadEffect("Music file/Note_Two.mp3");
     SimpleAudioEngine::getInstance()->preloadEffect("Music file/Pick.mp3");
 
-    //Ö÷½çÃæ
+    //ä¸»ç•Œé¢
     auto Main_interface = Sprite::create("Picture/Main interface.png", Rect(0, 0,
         GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)));
     Main_interface->setPosition( Vec2(visibleSize.width / 2, visibleSize.height / 2));
@@ -134,4 +143,12 @@ void HelloWorld::gamemyself(Ref* pSender)
 {
     Scene* scene = GameMyself::createScene();
     Director::getInstance()->pushScene(TransitionFade::create(1.5, scene));
+
 }
+
+void HelloWorld::keyconfig(Ref* pSender)
+{
+    SimpleAudioEngine::getInstance()->playEffect("Music file/Pick.mp3");
+    Scene* scene = KeySettingScene::createScene();
+    Director::getInstance()->pushScene(TransitionFade::create(1.5, scene));
+}//Add keyconfig function implementation

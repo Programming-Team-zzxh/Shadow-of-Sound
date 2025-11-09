@@ -3,14 +3,14 @@
 #include <cocos/editor-support/cocostudio/SimpleAudioEngine.h>
 using namespace CocosDenshion;
 
-extern int Note_strack[4];//4�����
+extern int Note_strack[4];//4条轨道
 extern bool Play_TimeStop;
 
 Hold::Hold(int x, int y, float speed)
 {
-	Hold_x = x;//Track���
-	Hold_y = y;//��������
-	Hold_speed = speed;//�ٶ�
+	Hold_x = x;//Track轨道
+	Hold_y = y;//音符种类
+	Hold_speed = speed;//速度
 	Hold_length = Hold_y;
 }
 
@@ -24,8 +24,8 @@ void Hold::Hold_end()
 {
 
 	this->removeFromParentAndCleanup(true);
-	//����remove��parent���룬����clear�Լ�
-	//���ֱ��delete�Ļ����ᱨ��Ҫɾ���Ķ���ǰ������������״̬
+	//调用remove与parent分离，并且clear自己
+	//如果直接delete的话，会报错要删除的对象当前还是正在运行状态
 	delete this;
 
 }
@@ -38,7 +38,7 @@ void Hold::Hold_update(float dt)
 	int Speed = Hold_speed;
 	this->setPosition(this->getPosition() + Vec2(0, -Hold_speed));
 
-	//Hold�����ж��ߺ������
+	//Hold进入判定线后的缩放
 	Vec2 orginal = this->getPosition();
 	if (this->getPositionY() <= 150)
 	{
@@ -60,7 +60,7 @@ void Hold::Hold_update(float dt)
 		{
 			SimpleAudioEngine::getInstance()->playEffect("Music file/Note_One.mp3");
 			Music_number = SimpleAudioEngine::getInstance()->playEffect("Music file/Note_Two.mp3");
-			//������Ч
+			//动作特效
 			auto Note_layer = (LayerColor*)this->getParent();
 			Icon = Sprite::create("Note icon/Note_Great.png");
 			Icon->setPosition(Vec2(Director::getInstance()->
@@ -71,7 +71,31 @@ void Hold::Hold_update(float dt)
 			auto rota = RotateTo::create(0.3f, 90);
 			auto spawn = Spawn::create(fade_1, rota, NULL);
 			Icon->runAction(spawn);
+			//1. 创建新图片精灵（替换为你的新图片路径）
+			auto NewIcon = Sprite::create("Note icon/Note_Great1.png"); // 新图片路径
+			//2. 设置位置
+			NewIcon->setPosition(Vec2(Director::getInstance()->getVisibleSize().width / 2, 900));
+			//3. 初始状态：透明 + 轻微缩小（0.7倍，用于放大效果）
+			NewIcon->setOpacity(0);
+			NewIcon->setScale(0.7f);
+			//4. 添加到图层（z轴设为3，确保在现有元素上方）
+			Note_layer->addChild(NewIcon, 3);
 
+			//5. 定义新图片的动画：淡入 + 放大
+			auto newFadeIn = FadeTo::create(0.2f, 255); // 0.2秒淡入（比现有稍快）
+			auto newScaleUp = ScaleTo::create(0.2f, 1.0f); // 0.2秒从0.7放大到1.0（微微放大）
+			auto newSpawn = Spawn::create(newFadeIn, newScaleUp, NULL); // 同步执行
+			//6. 保持显示一段时间后淡出
+			auto newKeep = DelayTime::create(0.4f); // 保持0.4秒
+			auto newFadeOut = FadeTo::create(0.6f, 0); // 0.6秒淡出
+			//7. 执行动画后移除
+			NewIcon->runAction(Sequence::create(
+				newSpawn,
+				newKeep,
+				newFadeOut,
+				CallFunc::create(CC_CALLBACK_0(Sprite::removeFromParent, NewIcon)),
+				NULL
+			));
 			Hold_state = 1;
 			//this->setOpacity(200);
 			Hold_PorG = 1;
@@ -97,13 +121,35 @@ void Hold::Hold_update(float dt)
 			auto rota = RotateTo::create(0.3f, 90);
 			auto spawn = Spawn::create(fade_1, rota, NULL);
 			Icon->runAction(spawn);
+			//1. 创建新图片精灵（替换为你的新图片路径）
+			auto NewIcon = Sprite::create("Note icon/Note_Good1.png"); // 新图片路径
+			//2. 设置位置
+			NewIcon->setPosition(Vec2(Director::getInstance()->getVisibleSize().width / 2, 900));
+			//3. 初始状态：透明 + 轻微缩小（0.7倍，用于放大效果）
+			NewIcon->setOpacity(0);
+			NewIcon->setScale(0.7f);
+			//4. 添加到图层（z轴设为3，确保在现有元素上方）
+			Note_layer->addChild(NewIcon, 3);
 
+			//5. 定义新图片的动画：淡入 + 放大
+			auto newFadeIn = FadeTo::create(0.2f, 255); // 0.2秒淡入（比现有稍快）
+			auto newScaleUp = ScaleTo::create(0.2f, 1.0f); // 0.2秒从0.7放大到1.0（微微放大）
+			auto newSpawn = Spawn::create(newFadeIn, newScaleUp, NULL); // 同步执行
+			//6. 保持显示一段时间后淡出
+			auto newKeep = DelayTime::create(0.4f); // 保持0.4秒
+			auto newFadeOut = FadeTo::create(0.6f, 0); // 0.6秒淡出
+			//7. 执行动画后移除
+			NewIcon->runAction(Sequence::create(
+				newSpawn,
+				newKeep,
+				newFadeOut,
+				CallFunc::create(CC_CALLBACK_0(Sprite::removeFromParent, NewIcon)),
+				NULL
+			));
 			Hold_state = 1;
 			//this->setOpacity(200);
 		}
-	}
-
-	//Hold������Ч
+	}	//Hold粒子特效
 	if ((Hold_state == 1 || Hold_state == 2) && getPositionY() > 150)
 	{
 		if (Cycle == 10)
@@ -118,7 +164,7 @@ void Hold::Hold_update(float dt)
 		else
 			Cycle++;
 	}
-	//������Ч�Ľ���
+	//动作特效的结束
 	if (Hold_state == 2 && getPositionY() < 150 && End == false)
 	{
 		auto icon = Icon;
@@ -131,14 +177,14 @@ void Hold::Hold_update(float dt)
 		End = true;
 	}
 
-	//�ڰ��°���������
+	//在按下按键后锁定
 	if (Note_strack[X - 1] == 1 && (Hold_state == 0 || Hold_state == 1))
 	{
 		Note_strack[X - 1] = -1;
 	}
 
-	//����֮ʱ
-	//��ȥ
+	//放手之时
+	//隐去
 	if (this->getPositionY() - Hold_length < 150 - 24 * Speed && Hold_state == 0)
 	{
 		this->setOpacity(120);
@@ -160,7 +206,7 @@ void Hold::Hold_update(float dt)
 		this->setOpacity(120);
 		Hold_state = -1;
 	}
-	//�ɹ�
+	//成功
 	else if (this->getPositionY() <= 150 + 24 * Speed && Hold_state == 1 && Note_strack[X - 1] == -1)
 	{
 		auto PlayFather = ((GamePlay*)(LayerColor*)this->getParent()->getParent());
@@ -181,8 +227,10 @@ void Hold::Hold_update(float dt)
 	else if (this->getPositionY() < 150 - 24 * Speed)
 	{
 		this->removeFromParentAndCleanup(true);
-		//����remove��parent���룬����clear�Լ�
-		//���ֱ��delete�Ļ����ᱨ��Ҫɾ���Ķ���ǰ������������״̬
+		//调用remove与parent分离，并且clear自己
+		//如果直接delete的话，会报错要删除的对象当前还是正在运行状态
 		delete this;
 	}
+
 }
+
