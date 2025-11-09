@@ -22,6 +22,8 @@ public:
 
     void keyconfig(cocos2d::Ref* pSender);//Create new KeyConfig button
 
+    void gameScoreStatistics(Ref* pSender); // 成绩统计
+
     // implement the "static create()" method manually
     CREATE_FUNC(HelloWorld);
 };

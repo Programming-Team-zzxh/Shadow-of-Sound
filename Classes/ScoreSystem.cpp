@@ -26,11 +26,11 @@ ScoreSystem::~ScoreSystem() {
 
 void ScoreSystem::addSongScore(const std::string& songName, const std::string& difficulty,
     int rawScore, int difficultyLevel, int maxPossibleScore) {
-    // æ£€æŸ¥æ˜¯å¦å·²å­˜åœ¨ç›¸åŒæ­Œæ›²å’Œéš¾åº¦çš„è®°å½•
+    // ¼ì²éÊÇ·ñÒÑ´æÔÚÏàÍ¬¸èÇúºÍÄÑ¶ÈµÄ¼ÇÂ¼
     bool found = false;
     for (auto& score : m_allScores) {
         if (score.songName == songName && score.difficulty == difficulty) {
-            // å¦‚æœæ–°åˆ†æ•°æ›´é«˜ï¼Œåˆ™æ›´æ–°
+            // Èç¹ûĞÂ·ÖÊı¸ü¸ß£¬Ôò¸üĞÂ
             if (rawScore > score.rawScore) {
                 score.rawScore = rawScore;
                 score.difficultyLevel = difficultyLevel;
@@ -43,7 +43,7 @@ void ScoreSystem::addSongScore(const std::string& songName, const std::string& d
         }
     }
 
-    // å¦‚æœæ˜¯æ–°è®°å½•
+    // Èç¹ûÊÇĞÂ¼ÇÂ¼
     if (!found) {
         SongScore newScore;
         newScore.songName = songName;
@@ -57,24 +57,24 @@ void ScoreSystem::addSongScore(const std::string& songName, const std::string& d
         m_allScores.push_back(newScore);
     }
 
-    // é‡æ–°æ’åº
+    // ÖØĞÂÅÅĞò
     sortScores();
     saveToFile();
 }
 
 float ScoreSystem::calculateTop20AverageWithZeroPadding() {
-    int totalCount = 20; // å›ºå®šè®¡ç®—20é¦–
+    int totalCount = 20; // ¹Ì¶¨¼ÆËã20Ê×
     float total = 0.0f;
 
-    // è®¡ç®—å®é™…å­˜åœ¨çš„æ­Œæ›²åˆ†æ•°
+    // ¼ÆËãÊµ¼Ê´æÔÚµÄ¸èÇú·ÖÊı
     int actualCount = std::min(totalCount, static_cast<int>(m_allScores.size()));
     for (int i = 0; i < actualCount; ++i) {
         total += m_allScores[i].calculatedScore;
     }
 
-    // ä¸è¶³20é¦–æ—¶ï¼Œç”¨0è¡¥è¶³
+    // ²»×ã20Ê×Ê±£¬ÓÃ0²¹×ã
     for (int i = actualCount; i < totalCount; ++i) {
-        total += 0.0f; // è¡¥0
+        total += 0.0f; // ²¹0
     }
 
     return total / totalCount;
@@ -104,7 +104,7 @@ std::string ScoreSystem::getTop20Statistics() {
     int actualCount = std::min(20, static_cast<int>(m_allScores.size()));
     int zeroPaddingCount = 20 - actualCount;
 
-    sprintf(buffer, "å®é™…æ¸¸ç©: %dé¦–, è¡¥é›¶: %dé¦–", actualCount, zeroPaddingCount);
+    sprintf(buffer, "Êµ¼ÊÓÎÍæ: %dÊ×, ²¹Áã: %dÊ×", actualCount, zeroPaddingCount);
     result = buffer;
 
     return result;
@@ -198,7 +198,7 @@ void ScoreSystem::loadFromFile() {
             score.calculatedScore = scoreObject["calculatedScore"].GetFloat();
         }
         else {
-            score.calculateScore(); // é‡æ–°è®¡ç®—
+            score.calculateScore(); // ÖØĞÂ¼ÆËã
         }
 
         if (scoreObject.HasMember("playTime") && scoreObject["playTime"].IsInt64()) {
@@ -213,6 +213,6 @@ void ScoreSystem::loadFromFile() {
 
 void ScoreSystem::clearAllScores() {
     m_allScores.clear();
-    // åˆ é™¤æ–‡ä»¶
+    // É¾³ıÎÄ¼ş
     remove(getScoreFilePath().c_str());
 }

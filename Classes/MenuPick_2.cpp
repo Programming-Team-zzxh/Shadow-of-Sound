@@ -266,7 +266,8 @@ bool MenuPick_2::init()
 void MenuPick_2::pickmusic(int pick)
 {
 	auto visibleSize = Director::getInstance()->getVisibleSize();
-	auto pickarrow = (Sprite*)this->getChildByTag(8);
+	auto container = this->getChildByTag(100);
+	auto pickarrow = (Sprite*)container->getChildByTag(8);
 	this->getChildByTag(7)->removeFromParentAndCleanup(true);
 
 	if (pick == 1)

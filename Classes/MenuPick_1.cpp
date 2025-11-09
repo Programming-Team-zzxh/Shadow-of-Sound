@@ -1,4 +1,4 @@
-#include "MenuPick_1.h"
+ï»¿#include "MenuPick_1.h"
 #include "GamePlay.h"
 #include <cocos/editor-support/cocostudio/SimpleAudioEngine.h>
 using namespace CocosDenshion;
@@ -27,45 +27,45 @@ bool MenuPick_1::init()
 	auto songContainer = Node::create();
 	this->addChild(songContainer, 1, 100); // tag = 100
 
-	//¶ÁÈ¡JsonÎÄ¼ş
+	//è¯»å–Jsonæ–‡ä»¶
 	std::string Rec = FileUtils::getInstance()->getStringFromFile("Record/GameRecord.json");
 	RecJson.Parse<rapidjson::kParseDefaultFlags>(Rec.c_str());
-	//»¹ÊÇ¼ÓÁË¸ö¼ÆÊ±Æ÷
+	//è¿˜æ˜¯åŠ äº†ä¸ªè®¡æ—¶å™¨
 	this->schedule(CC_SCHEDULE_SELECTOR(MenuPick_1::pickdifficulty));
 
 	auto Backlayer = LayerColor::create(Color4B::BLACK);
-	//Backlayer,tag 0,²Ëµ¥tag 1,ÄÑ¶ÈÑ¡Ôñtag 2,Ñ¡Ôñµ¥Ñ¡tag 3,·ÖÊıtag 4,ÄÑ¶Ètag 5,µÈ¼¶tag 6,
-	// ¸èÇúÍ¼Ïñtag7,¼ıÍ·tag8£¬ËÙ¶Ètag9
-	//¼ıÍ·tag8
+	//Backlayer,tag 0,èœå•tag 1,éš¾åº¦é€‰æ‹©tag 2,é€‰æ‹©å•é€‰tag 3,åˆ†æ•°tag 4,éš¾åº¦tag 5,ç­‰çº§tag 6,
+	// æ­Œæ›²å›¾åƒtag7,ç®­å¤´tag8ï¼Œé€Ÿåº¦tag9
+	//ç®­å¤´tag8
 	this->addChild(Backlayer, 0, 0);
 	auto Main_interface = Sprite::create("Cover/Jack War -YGO5ds.png");
 	Main_interface->setOpacity(100);
 	Main_interface->setPosition(Vec2(visibleSize.width / 2, visibleSize.height / 2));
 	Backlayer->addChild(Main_interface, 1);
-	//¸èÇúÑ¡Ïî
+	//æ­Œæ›²é€‰é¡¹
 
 	auto White1 = Sprite::create("Cover/White.png");
 	auto MenuPick1 = MenuItemSprite::create(White1, White1,
 		CC_CALLBACK_0(MenuPick_1::pickmusic, this, 1));
-	//ÇúÃû¼Óµ½¾«ÁéÉÏ
-	auto Pick1 = Label::createWithTTF(FontToUTF8("¥¤¥ó¥Õ¥§¥ë¥Î¥·¥Æ¥£"), "fonts/simhei.ttf", 36);
+	//æ›²ååŠ åˆ°ç²¾çµä¸Š
+	auto Pick1 = Label::createWithTTF(FontToUTF8("ã‚¤ãƒ³ãƒ•ã‚§ãƒ«ãƒã‚·ãƒ†ã‚£"), "fonts/simhei.ttf", 36);
 	//Pick1->setColor(Color3B::BLACK);
 	//Pick1->enableGlow(Color4B::RED);
 	MenuPick1->addChild(Pick1, 0);
 	Pick1->setPosition(Vec2(199, 29));
 
-	//¼ÈÈ»ÉÏ±ßÓĞ¸ñÊ½ÁË
+	//æ—¢ç„¶ä¸Šè¾¹æœ‰æ ¼å¼äº†
 	auto White2 = Sprite::create("Cover/White.png");
 	auto MenuPick2 = MenuItemSprite::create(White2, White2,
 		CC_CALLBACK_0(MenuPick_1::pickmusic, this, 2));
-	auto Pick2 = Label::createWithTTF(FontToUTF8("Ç§±¾—@"), "fonts/simhei.ttf", 36);
+	auto Pick2 = Label::createWithTTF(FontToUTF8("åƒæœ¬æ¡œ"), "fonts/simhei.ttf", 36);
 	MenuPick2->addChild(Pick2, 0);
 	Pick2->setPosition(Vec2(199, 29));
 
 	auto White3 = Sprite::create("Cover/White.png");
 	auto MenuPick3 = MenuItemSprite::create(White3, White3,
 		CC_CALLBACK_0(MenuPick_1::pickmusic, this, 3));
-	auto Pick3 = Label::createWithTTF(FontToUTF8("ß[‘ïÍõ5DS"), "fonts/simhei.ttf", 36);
+	auto Pick3 = Label::createWithTTF(FontToUTF8("éŠæˆ¯ç‹5DS"), "fonts/simhei.ttf", 36);
 	MenuPick3->addChild(Pick3, 0);
 	Pick3->setPosition(Vec2(199, 29));
 
@@ -104,7 +104,7 @@ bool MenuPick_1::init()
 	MenuPick8->addChild(Pick8, 0);
 	Pick8->setPosition(Vec2(199, 29));
 
-	//²Ëµ¥
+	//èœå•
 	auto Menu = Menu::create(MenuPick1, MenuPick2, MenuPick3, MenuPick4, MenuPick5,
 		MenuPick6, NULL);
 	Menu->setPosition(Vec2(0, 0));
@@ -116,21 +116,21 @@ bool MenuPick_1::init()
 	MenuPick6->setPosition(Vec2(300, 400));
 	songContainer->addChild(Menu, 1, 1);
 
-	/*¸èÇúµÄ±³¾°
+	/*æ­Œæ›²çš„èƒŒæ™¯
 	auto BackGround = Sprite::create("Cover/BackGround.png");
 	BackGround->setOpacity(120);
 	BackGround->setPosition(Vec2(visibleSize.width / 2 + 400, visibleSize.height / 2));
 	this->addChild(BackGround, 2);*/
-	//ÄÑ¶ÈÑ¡Ôñ
+	//éš¾åº¦é€‰æ‹©
 	auto BackGround = Sprite::create("Cover/Difficulty.png");
 	BackGround->setAnchorPoint(Vec2(0, 1));
 	BackGround->setPosition(Vec2(visibleSize.width / 2 + 16, visibleSize.height / 2 - 230));
 	this->addChild(BackGround, 2, 2);
-	//³õÊ¼HdÄÑ¶È
+	//åˆå§‹Hdéš¾åº¦
 	auto Pick_diff = Sprite::create("Cover/Hd2.png");
 	this->addChild(Pick_diff, 4, 3);
 	Pick_diff->setPosition(BackGround->getPosition() + Vec2(110, -25));
-	//µÈ¼¶·ÖÊıºÍÄÑ¶È
+	//ç­‰çº§åˆ†æ•°å’Œéš¾åº¦
 	auto GameLevel = Label::createWithTTF(" ", "fonts/arial.ttf", 48);
 	this->addChild(GameLevel, 4, 6);
 	GameLevel->setAnchorPoint(Vec2(0, 0.5));
@@ -145,7 +145,7 @@ bool MenuPick_1::init()
 	GameDiff->setAnchorPoint(Vec2(0, 0.5));
 	GameDiff->setPosition(Pick_diff->getPosition() + Vec2(125, 0));
 
-	//ËÙ¶È
+	//é€Ÿåº¦
 	auto Speed = Sprite::create("Cover/Butt/Speed.png");
 	Speed->setAnchorPoint(Vec2(0, 1));
 	Speed->setPosition(BackGround->getPosition() + Vec2(0, -80));
@@ -161,16 +161,16 @@ bool MenuPick_1::init()
 	Sp_Left->setPosition(Speed->getPosition() + Vec2(0, -50));
 	Sp_Right->setPosition(Speed->getPosition() + Vec2(100, -50));
 	this->addChild(SpeedPick, 3);
-	//ÏÔÊ¾ËÙ¶ÈÎÄ±¾
+	//æ˜¾ç¤ºé€Ÿåº¦æ–‡æœ¬
 	auto GameSp = Label::createWithTTF(" ", "fonts/Saira-Light.ttf", 20);
 	GameSp->setColor(Color3B::BLACK);
 	GameSp->setPosition(Speed->getPosition() + Vec2(50, -33));
 	this->addChild(GameSp, 3, 9);
 
-	//CC_CALLBACK_XÖĞµÄ²ÎÊı
-	//µÚÒ»¸öÊÇÒª»Øµ÷µÄ·½·¨Ãû³Æ£¬ÓÃÀàÃû¼Ó·½·¨µÄĞÎÊ½£¬
-	//µÚ¶ş¸ö²ÎÊıÊÇº¯Êı±»µ÷ÓÃµÄ¶ÔÏóµÄÖ¸Õë£¬Ò»°ãÊÇthis¡£
-	//0ÊÇ´ú±íÒª»Øµ÷µÄ·½·¨°ó¶¨µÚ0¸ö²ÎÊıÖ®ºóµÄ²ÎÊı¡£
+	//CC_CALLBACK_Xä¸­çš„å‚æ•°
+	//ç¬¬ä¸€ä¸ªæ˜¯è¦å›è°ƒçš„æ–¹æ³•åç§°ï¼Œç”¨ç±»ååŠ æ–¹æ³•çš„å½¢å¼ï¼Œ
+	//ç¬¬äºŒä¸ªå‚æ•°æ˜¯å‡½æ•°è¢«è°ƒç”¨çš„å¯¹è±¡çš„æŒ‡é’ˆï¼Œä¸€èˆ¬æ˜¯thisã€‚
+	//0æ˜¯ä»£è¡¨è¦å›è°ƒçš„æ–¹æ³•ç»‘å®šç¬¬0ä¸ªå‚æ•°ä¹‹åçš„å‚æ•°ã€‚
 	auto Ez_Diff = MenuItemImage::create("Cover/Ez1.png", "Cover/Ez1.png",
 		CC_CALLBACK_0(MenuPick_1::pickdiffprer, this, 1));
 	auto Hd_Diff = MenuItemImage::create("Cover/Hd1.png", "Cover/Hd1.png",
@@ -184,19 +184,19 @@ bool MenuPick_1::init()
 	In_Diff->setPosition(Hd_Diff->getPosition() + Vec2(85, 0));
 	this->addChild(Difficluty, 3);
 
-	//¸èÇú×÷»­
+	//æ­Œæ›²ä½œç”»
 	auto PickSprite1 = Sprite::create("Cover/" + music_name + ".png");
 	PickSprite1->setScale(0.4);
 	PickSprite1->setPosition(Vec2(visibleSize.width / 2 + 400, visibleSize.height / 2));
 	this->addChild(PickSprite1, 3, 7);
 
-	//¼ıÍ·
+	//ç®­å¤´
 	auto Pick_Arrow = Sprite::create("Cover/Arrow.png");
 	Pick_Arrow->setAnchorPoint(Vec2(0, 0.5));
 	Pick_Arrow->setPosition(MenuPick1->getPosition() + Vec2(215, 0));
 	songContainer->addChild(Pick_Arrow, 2, 8);
 
-	//½øÈë°´Å¥,¶ÀÁ¢ÓÚÆäËû²Ëµ¥Ïî
+	//è¿›å…¥æŒ‰é’®,ç‹¬ç«‹äºå…¶ä»–èœå•é¡¹
 	auto Enter = MenuItemImage::create("Cover/Enter.png", "Cover/Enter2.png", "Cover/Enter.png",
 		CC_CALLBACK_1(MenuPick_1::gameplay, this));
 	auto EnterMenu = Menu::create(Enter, NULL);
@@ -227,20 +227,20 @@ bool MenuPick_1::init()
 	};
 	_eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
 
-	//Êó±ê¹öÂÖÊÂ¼ş¼àÌı
+	//é¼ æ ‡æ»šè½®äº‹ä»¶ç›‘å¬
 	auto scrollListener = EventListenerMouse::create();
 	scrollListener->onMouseScroll = [=](Event* event) {
 		EventMouse* e = (EventMouse*)event;
 		float scrollY = e->getScrollY();
 
-		//Ö»ÔÚÆÁÄ»×óËÄ·ÖÖ®Ò»ÇøÓò¹ö¶¯
+		//åªåœ¨å±å¹•å·¦å››åˆ†ä¹‹ä¸€åŒºåŸŸæ»šåŠ¨
 		Vec2 mousePos = e->getLocationInView();
 		auto visibleSize = Director::getInstance()->getVisibleSize();
 
 		if (mousePos.x > visibleSize.width / 4)
-			return;  // Êó±ê²»ÔÚÑ¡¸èÇøÓò£¬²»¹ö¶¯
+			return;  // é¼ æ ‡ä¸åœ¨é€‰æ­ŒåŒºåŸŸï¼Œä¸æ»šåŠ¨
 
-		auto container = this->getChildByTag(100);  // ÈİÆ÷½Úµã
+		auto container = this->getChildByTag(100);  // å®¹å™¨èŠ‚ç‚¹
 		if (!container) return;
 
 		float scrollSpeed = 40.0f;
@@ -249,7 +249,7 @@ bool MenuPick_1::init()
 		Vec2 pos = container->getPosition();
 		pos.y += deltaY;
 
-		// ÏŞÖÆ¹ö¶¯·¶Î§£¨±ß½ç·ÀÒç³ö£©
+		// é™åˆ¶æ»šåŠ¨èŒƒå›´ï¼ˆè¾¹ç•Œé˜²æº¢å‡ºï¼‰
 		float minY = -400.0f;
 		float maxY = 400.0f;
 		pos.y = clampf(pos.y, minY, maxY);
@@ -264,7 +264,8 @@ bool MenuPick_1::init()
 void MenuPick_1::pickmusic(int pick)
 {
 	auto visibleSize = Director::getInstance()->getVisibleSize();
-	auto pickarrow = (Sprite*)this->getChildByTag(8);
+	auto container = this->getChildByTag(100);
+	auto pickarrow = (Sprite*)container->getChildByTag(8);
 	this->getChildByTag(7)->removeFromParentAndCleanup(true);
 
 	if (pick == 1)
@@ -327,11 +328,11 @@ void MenuPick_1::pickspeed(int pick)
 		float Speed = Play_Sp + 0.1f;
 		RecJson["Speed"].SetFloat(Speed);
 	}
-	//½«jsonÊı¾İÖØĞÂĞ´ÈëÎÄ¼şÖĞ
+	//å°†jsonæ•°æ®é‡æ–°å†™å…¥æ–‡ä»¶ä¸­
 	StringBuffer buffer;
 	rapidjson::Writer<StringBuffer> writer(buffer);
 	RecJson.Accept(writer);
-	//²»ÖªµÀÎªÊ²Ã´ÔÚÕâcocos2d-x²»ÄÜÖ±½ÓÓÃÏà¶ÔÂ·¾¶
+	//ä¸çŸ¥é“ä¸ºä»€ä¹ˆåœ¨è¿™cocos2d-xä¸èƒ½ç›´æ¥ç”¨ç›¸å¯¹è·¯å¾„
 	std::string filepath = FileUtils::getInstance()->fullPathForFilename("Record/GameSet.json");
 	FILE* Readfile = fopen(filepath.c_str(), "wb");
 	fputs(buffer.GetString(), Readfile);
@@ -363,7 +364,7 @@ void MenuPick_1::pickdiffprer(int pick)
 	}
 }
 
-//¸üĞÂ
+//æ›´æ–°
 void MenuPick_1::pickdifficulty(float dt)
 {
 	Rec = FileUtils::getInstance()->getStringFromFile("Record/GameRecord.json");
@@ -404,7 +405,7 @@ void MenuPick_1::pickdifficulty(float dt)
 		gameLevel->setString(Temporary);
 	}
 
-	//¸üĞÂËÙ¶È
+	//æ›´æ–°é€Ÿåº¦
 	Rec = FileUtils::getInstance()->getStringFromFile("Record/GameSet.json");
 	RecJson.Parse<rapidjson::kParseDefaultFlags>(Rec.c_str());
 	Play_Sp = RecJson["Speed"].GetFloat();

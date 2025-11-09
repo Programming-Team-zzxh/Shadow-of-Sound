@@ -455,7 +455,6 @@ void GamePlay::Update_count(float dt)
 	{
 		CreateNote(Game_time);
 	}
-}
 
 	// Key detection section
 	auto keyConfig = KeyConfig::getInstance();

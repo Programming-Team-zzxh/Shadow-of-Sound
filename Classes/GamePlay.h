@@ -43,6 +43,7 @@ public:
     void GamePause(Ref* pSender);//暂停
     void PauseAfter();//暂停回调函数
     void GameEnd();//结束，进入结算界面
+    bool isKeyPressed(EventKeyboard::KeyCode keyCode);
     CREATE_FUNC(GamePlay);
 
 private:

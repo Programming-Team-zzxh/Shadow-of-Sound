@@ -6,7 +6,7 @@
 
 class ScoreChart : public cocos2d::Node {
 public:
-    // 浣跨敤闈欐�乧reate鍑芥暟鎺ュ彈鍙傛暟
+    // 使用静态create函数接受参数
     static ScoreChart* createWithSize(const cocos2d::Size& size);
 
     virtual bool init(const cocos2d::Size& size);
@@ -32,7 +32,7 @@ private:
     float _minScore, _maxScore;
     int _dataPointCount;
 
-    // 绉婚櫎 CREATE_FUNC锛屽洜涓烘垜浠渶瑕佽嚜瀹氫箟create鍑芥暟
+    // 移除 CREATE_FUNC，因为我们需要自定义create函数
 };
 
 #endif

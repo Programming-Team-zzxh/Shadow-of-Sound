@@ -13,17 +13,17 @@ class KeyConfig {
 public:
     static KeyConfig* getInstance();
 
-    // Configuration management functions
+    // 配置管理函数
     void loadConfig();
     void saveConfig();
     EventKeyboard::KeyCode getKeyForTrack(int track);
     void setKeyForTrack(int track, EventKeyboard::KeyCode keyCode);
 
-    // Key name function
+    // 按键名称功能
     static std::string getKeyDisplayName(EventKeyboard::KeyCode keyCode);
     static std::string getKeyName(EventKeyboard::KeyCode keyCode);
 
-    // Key detection
+    // 按键检测
     static bool isKeyPressed(EventKeyboard::KeyCode keyCode);
 
 private:

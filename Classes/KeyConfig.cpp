@@ -14,7 +14,7 @@ KeyConfig* KeyConfig::getInstance() {
 }
 
 KeyConfig::KeyConfig() {
-    // Default key configuration: A, S, L, ;
+    // 默认按键配置：A, S, L, ;
     trackKeys[0] = EventKeyboard::KeyCode::KEY_A;
     trackKeys[1] = EventKeyboard::KeyCode::KEY_S;
     trackKeys[2] = EventKeyboard::KeyCode::KEY_L;
@@ -26,7 +26,7 @@ KeyConfig::KeyConfig() {
 void KeyConfig::loadConfig() {
     auto fileUtils = FileUtils::getInstance();
 
-    // Create config directory
+    // 创建config目录（如果不存在）
     std::string writablePath = fileUtils->getWritablePath();
     std::string configDir = writablePath + "config/";
     if (!fileUtils->isDirectoryExist(configDir)) {
@@ -49,7 +49,7 @@ void KeyConfig::loadConfig() {
         }
     }
     else {
-        // Create default configuration document
+        // 创建默认配置文档
         configDoc.SetObject();
         rapidjson::Document::AllocatorType& allocator = configDoc.GetAllocator();
 
@@ -66,7 +66,7 @@ void KeyConfig::loadConfig() {
 void KeyConfig::saveConfig() {
     rapidjson::Document::AllocatorType& allocator = configDoc.GetAllocator();
 
-    // Update key configuration
+    // 更新按键配置
     if (configDoc.HasMember("track_keys")) {
         configDoc.RemoveMember("track_keys");
     }
@@ -77,7 +77,7 @@ void KeyConfig::saveConfig() {
     }
     configDoc.AddMember("track_keys", keyArray, allocator);
 
-    // Save to file
+    // 保存到文件
     rapidjson::StringBuffer buffer;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
     configDoc.Accept(writer);
@@ -107,7 +107,8 @@ EventKeyboard::KeyCode KeyConfig::getKeyForTrack(int track) {
 void KeyConfig::setKeyForTrack(int track, EventKeyboard::KeyCode keyCode) {
     if (track >= 0 && track < 4) {
         trackKeys[track] = keyCode;
-        saveConfig(); // Ensure to save the configuration
+        saveConfig(); // 确保调用保存配置
+    }
 }
 
 std::string KeyConfig::getKeyDisplayName(EventKeyboard::KeyCode keyCode) {
@@ -196,21 +197,21 @@ bool KeyConfig::isKeyPressed(EventKeyboard::KeyCode keyCode) {
 std::unordered_map<EventKeyboard::KeyCode, std::string> KeyConfig::createKeyNameMap() {
     std::unordered_map<EventKeyboard::KeyCode, std::string> map;
 
-    // Letter keys
+    // 字母键
     for (char c = 'A'; c <= 'Z'; c++) {
         EventKeyboard::KeyCode keyCode = static_cast<EventKeyboard::KeyCode>(
             static_cast<int>(EventKeyboard::KeyCode::KEY_A) + (c - 'A'));
         map[keyCode] = std::string(1, c);
     }
 
-    // Number keys
+    // 数字键
     for (char c = '0'; c <= '9'; c++) {
         EventKeyboard::KeyCode keyCode = static_cast<EventKeyboard::KeyCode>(
             static_cast<int>(EventKeyboard::KeyCode::KEY_0) + (c - '0'));
         map[keyCode] = std::string(1, c);
     }
 
-    // Function keys
+    // 功能键
     map[EventKeyboard::KeyCode::KEY_SPACE] = "Space";
     map[EventKeyboard::KeyCode::KEY_ENTER] = "Enter";
     map[EventKeyboard::KeyCode::KEY_ESCAPE] = "Esc";
@@ -221,13 +222,13 @@ std::unordered_map<EventKeyboard::KeyCode, std::string> KeyConfig::createKeyName
     map[EventKeyboard::KeyCode::KEY_ALT] = "Alt";
     map[EventKeyboard::KeyCode::KEY_CAPS_LOCK] = "CapsLock";
 
-    // Direction keys
+    // 方向键
     map[EventKeyboard::KeyCode::KEY_UP_ARROW] = "Up";
     map[EventKeyboard::KeyCode::KEY_DOWN_ARROW] = "Down";
     map[EventKeyboard::KeyCode::KEY_LEFT_ARROW] = "Left";
     map[EventKeyboard::KeyCode::KEY_RIGHT_ARROW] = "Right";
 
-    // Symbol keys
+    // 符号键
     map[EventKeyboard::KeyCode::KEY_COMMA] = ",";
     map[EventKeyboard::KeyCode::KEY_PERIOD] = ".";
     map[EventKeyboard::KeyCode::KEY_SEMICOLON] = ";";
@@ -240,7 +241,7 @@ std::unordered_map<EventKeyboard::KeyCode, std::string> KeyConfig::createKeyName
     map[EventKeyboard::KeyCode::KEY_RIGHT_BRACKET] = "]";
     map[EventKeyboard::KeyCode::KEY_GRAVE] = "`";
 
-    // F key
+    // F键
     for (int i = 1; i <= 12; i++) {
         EventKeyboard::KeyCode keyCode = static_cast<EventKeyboard::KeyCode>(
             static_cast<int>(EventKeyboard::KeyCode::KEY_F1) + i - 1);

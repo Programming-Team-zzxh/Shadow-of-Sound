@@ -4,6 +4,7 @@
 #include "GameStastis.h"
 #include "GameMyself.h"
 #include "KeySettingScene.h"
+#include "ScoreStatisticsScene.h"
 #include <cocos/editor-support/cocostudio/SimpleAudioEngine.h>
 using namespace CocosDenshion;
 
@@ -152,3 +153,9 @@ void HelloWorld::keyconfig(Ref* pSender)
     Scene* scene = KeySettingScene::createScene();
     Director::getInstance()->pushScene(TransitionFade::create(1.5, scene));
 }//Add keyconfig function implementation
+
+void HelloWorld::gameScoreStatistics(Ref* pSender)
+{
+    Scene* scene = ScoreStatisticsScene::createScene();
+    Director::getInstance()->pushScene(TransitionFade::create(1.5, scene));
+}

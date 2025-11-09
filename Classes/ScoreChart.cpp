@@ -22,7 +22,7 @@ bool ScoreChart::init(const Size& size) {
     
     _chartSize = size;
     _minScore = 0.0f;
-    _maxScore = 3.0f; // å‡è®¾æœ€å¤§åˆ†æ•°ä¸º3.0
+    _maxScore = 3.0f; // ¼ÙÉè×î´ó·ÖÊıÎª3.0
     _dataPointCount = 0;
     
     this->setContentSize(size);
@@ -41,23 +41,23 @@ void ScoreChart::updateChartData() {
 }
 
 void ScoreChart::setChartTitle(const std::string& title) {
-    // å¯ä»¥ç”¨äºåŠ¨æ€è®¾ç½®å›¾è¡¨æ ‡é¢˜
-    // å½“å‰å®ç°ä¸­æ ‡é¢˜åœ¨drawBackgroundä¸­å›ºå®š
+    // ¿ÉÒÔÓÃÓÚ¶¯Ì¬ÉèÖÃÍ¼±í±êÌâ
+    // µ±Ç°ÊµÏÖÖĞ±êÌâÔÚdrawBackgroundÖĞ¹Ì¶¨
 }
 
 void ScoreChart::calculateChartData() {
     _scoreHistory.clear();
     _timeLabels.clear();
     
-    // è·å–æ‰€æœ‰æˆç»©å¹¶æŒ‰æ—¶é—´æ’åº
-    auto allScores = ScoreSystem::getInstance()->getTopScores(100); // è·å–è¶³å¤Ÿå¤šçš„è®°å½•
+    // »ñÈ¡ËùÓĞ³É¼¨²¢°´Ê±¼äÅÅĞò
+    auto allScores = ScoreSystem::getInstance()->getTopScores(100); // »ñÈ¡×ã¹»¶àµÄ¼ÇÂ¼
     
-    // æŒ‰æ—¶é—´æ’åºï¼ˆæ–°çš„åœ¨å‰ï¼‰
+    // °´Ê±¼äÅÅĞò£¨ĞÂµÄÔÚÇ°£©
     std::sort(allScores.begin(), allScores.end(), [](const SongScore& a, const SongScore& b) {
-        return a.playTime < b.playTime; // æ—¶é—´æˆ³å°çš„åœ¨å‰ï¼ˆæ—§çš„ï¼‰
+        return a.playTime < b.playTime; // Ê±¼ä´ÁĞ¡µÄÔÚÇ°£¨¾ÉµÄ£©
     });
     
-    // è®¡ç®—ç´¯è®¡å¹³å‡åˆ†çš„å˜åŒ–
+    // ¼ÆËãÀÛ¼ÆÆ½¾ù·ÖµÄ±ä»¯
     float runningTotal = 0.0f;
     int count = 0;
     
@@ -68,32 +68,32 @@ void ScoreChart::calculateChartData() {
         
         _scoreHistory.push_back(currentAverage);
         
-        // ç”Ÿæˆæ—¶é—´æ ‡ç­¾ï¼ˆç®€åŒ–æ˜¾ç¤ºï¼‰
+        // Éú³ÉÊ±¼ä±êÇ©£¨¼ò»¯ÏÔÊ¾£©
         char timeLabel[32];
         if (count <= 5) {
-            sprintf(timeLabel, "#%d", count); // å‰5æ¬¡æ˜¾ç¤ºå…·ä½“ç¼–å·
+            sprintf(timeLabel, "#%d", count); // Ç°5´ÎÏÔÊ¾¾ßÌå±àºÅ
         } else if (count == allScores.size()) {
-            sprintf(timeLabel, "Now"); // æœ€åä¸€æ¬¡æ˜¾ç¤º"Now"
+            sprintf(timeLabel, "Now"); // ×îºóÒ»´ÎÏÔÊ¾"Now"
         } else if (count % 5 == 0) {
-            sprintf(timeLabel, "#%d", count); // æ¯5æ¬¡æ˜¾ç¤ºä¸€æ¬¡ç¼–å·
+            sprintf(timeLabel, "#%d", count); // Ã¿5´ÎÏÔÊ¾Ò»´Î±àºÅ
         } else {
-            sprintf(timeLabel, ""); // å…¶ä»–æƒ…å†µä¸æ˜¾ç¤ºæ ‡ç­¾
+            sprintf(timeLabel, ""); // ÆäËûÇé¿ö²»ÏÔÊ¾±êÇ©
         }
         _timeLabels.push_back(timeLabel);
     }
     
     _dataPointCount = _scoreHistory.size();
     
-    // è®¡ç®—Yè½´èŒƒå›´
+    // ¼ÆËãYÖá·¶Î§
     if (!_scoreHistory.empty()) {
         auto minMax = std::minmax_element(_scoreHistory.begin(), _scoreHistory.end());
         _minScore = *minMax.first;
         _maxScore = *minMax.second;
         
-        // æ·»åŠ ä¸€äº›è¾¹è·
+        // Ìí¼ÓÒ»Ğ©±ß¾à
         float range = _maxScore - _minScore;
         if (range < 0.5f) {
-            // å¦‚æœæ•°æ®èŒƒå›´å¤ªå°ï¼Œæ‰©å±•èŒƒå›´
+            // Èç¹ûÊı¾İ·¶Î§Ì«Ğ¡£¬À©Õ¹·¶Î§
             _minScore = std::max(0.0f, _minScore - 0.25f);
             _maxScore = _maxScore + 0.25f;
         } else {
@@ -101,22 +101,22 @@ void ScoreChart::calculateChartData() {
             _maxScore = _maxScore + range * 0.1f;
         }
         
-        // ç¡®ä¿æœ€å°å€¼ä¸ä¸ºè´Ÿ
+        // È·±£×îĞ¡Öµ²»Îª¸º
         _minScore = std::max(0.0f, _minScore);
     } else {
-        // æ²¡æœ‰æ•°æ®æ—¶çš„é»˜è®¤èŒƒå›´
+        // Ã»ÓĞÊı¾İÊ±µÄÄ¬ÈÏ·¶Î§
         _minScore = 0.0f;
         _maxScore = 2.0f;
     }
 }
 
 void ScoreChart::drawBackground() {
-    // å›¾è¡¨èƒŒæ™¯
+    // Í¼±í±³¾°
     auto bg = LayerColor::create(Color4B(20, 20, 40, 200), _chartSize.width, _chartSize.height);
     bg->setPosition(0, 0);
     this->addChild(bg);
     
-    // è¾¹æ¡†
+    // ±ß¿ò
     auto border = DrawNode::create();
     border->drawRect(Vec2(0, 0), Vec2(_chartSize.width, _chartSize.height), Color4F(0.8f, 0.8f, 0.8f, 0.6f));
     this->addChild(border);
@@ -125,14 +125,14 @@ void ScoreChart::drawBackground() {
 void ScoreChart::drawGrid() {
     auto drawNode = DrawNode::create();
     
-    // æ°´å¹³ç½‘æ ¼çº¿
+    // Ë®Æ½Íø¸ñÏß
     int horizontalLines = 4;
     for (int i = 0; i <= horizontalLines; i++) {
         float y = (i * _chartSize.height) / horizontalLines;
         drawNode->drawLine(Vec2(0, y), Vec2(_chartSize.width, y), Color4F(1, 1, 1, 0.15f));
     }
     
-    // å‚ç›´ç½‘æ ¼çº¿ï¼ˆå¦‚æœæ•°æ®ç‚¹è¶³å¤Ÿå¤šï¼‰
+    // ´¹Ö±Íø¸ñÏß£¨Èç¹ûÊı¾İµã×ã¹»¶à£©
     if (_dataPointCount > 1) {
         int verticalLines = std::min(_dataPointCount - 1, 8);
         for (int i = 0; i <= verticalLines; i++) {
@@ -146,7 +146,7 @@ void ScoreChart::drawGrid() {
 
 void ScoreChart::drawLineChart() {
     if (_dataPointCount < 1) {
-        // æ²¡æœ‰æ•°æ®æ—¶æ˜¾ç¤ºæç¤º
+        // Ã»ÓĞÊı¾İÊ±ÏÔÊ¾ÌáÊ¾
         auto noDataLabel = Label::createWithSystemFont("No enough data for chart", "Arial", 14);
         noDataLabel->setPosition(Vec2(_chartSize.width/2, _chartSize.height/2));
         noDataLabel->setColor(Color3B(150, 150, 150));
@@ -157,13 +157,13 @@ void ScoreChart::drawLineChart() {
     auto drawNode = DrawNode::create();
     
     if (_dataPointCount == 1) {
-        // åªæœ‰ä¸€ä¸ªæ•°æ®ç‚¹æ—¶æ˜¾ç¤ºç‚¹
+        // Ö»ÓĞÒ»¸öÊı¾İµãÊ±ÏÔÊ¾µã
         float x = _chartSize.width / 2;
         float y = ((_scoreHistory[0] - _minScore) / (_maxScore - _minScore)) * _chartSize.height;
         
         drawNode->drawDot(Vec2(x, y), 6, Color4F(0, 1, 0, 1.0f));
         
-        // æ˜¾ç¤ºæ•°å€¼
+        // ÏÔÊ¾ÊıÖµ
         char scoreText[32];
         sprintf(scoreText, "%.2f", _scoreHistory[0]);
         auto scoreLabel = Label::createWithSystemFont(scoreText, "Arial", 12);
@@ -172,7 +172,7 @@ void ScoreChart::drawLineChart() {
         this->addChild(scoreLabel);
         
     } else {
-        // å¤šä¸ªæ•°æ®ç‚¹æ—¶ç»˜åˆ¶æŠ˜çº¿
+        // ¶à¸öÊı¾İµãÊ±»æÖÆÕÛÏß
         for (int i = 0; i < _dataPointCount - 1; i++) {
             float x1 = (i * _chartSize.width) / (_dataPointCount - 1);
             float y1 = ((_scoreHistory[i] - _minScore) / (_maxScore - _minScore)) * _chartSize.height;
@@ -180,23 +180,23 @@ void ScoreChart::drawLineChart() {
             float x2 = ((i + 1) * _chartSize.width) / (_dataPointCount - 1);
             float y2 = ((_scoreHistory[i + 1] - _minScore) / (_maxScore - _minScore)) * _chartSize.height;
             
-            // ä½¿ç”¨æ¸å˜è‰²ï¼šåˆ†æ•°ä¸Šå‡ä¸ºç»¿è‰²ï¼Œä¸‹é™ä¸ºçº¢è‰²
+            // Ê¹ÓÃ½¥±äÉ«£º·ÖÊıÉÏÉıÎªÂÌÉ«£¬ÏÂ½µÎªºìÉ«
             Color4F lineColor;
             float lineWidth = 2.5f;
             
             if (_scoreHistory[i + 1] >= _scoreHistory[i]) {
-                lineColor = Color4F(0.2f, 0.8f, 0.2f, 1.0f); // ç»¿è‰² - è¿›æ­¥
+                lineColor = Color4F(0.2f, 0.8f, 0.2f, 1.0f); // ÂÌÉ« - ½ø²½
             } else {
-                lineColor = Color4F(0.8f, 0.2f, 0.2f, 1.0f); // çº¢è‰² - é€€æ­¥
+                lineColor = Color4F(0.8f, 0.2f, 0.2f, 1.0f); // ºìÉ« - ÍË²½
             }
             
             drawNode->drawLine(Vec2(x1, y1), Vec2(x2, y2), lineColor);
             
-            // ç»˜åˆ¶æ•°æ®ç‚¹
+            // »æÖÆÊı¾İµã
             drawNode->drawDot(Vec2(x1, y1), 4, Color4F(1, 1, 1, 1.0f));
             drawNode->drawDot(Vec2(x2, y2), 4, Color4F(1, 1, 1, 1.0f));
             
-            // åœ¨ç¬¬ä¸€ä¸ªç‚¹å’Œæœ€åä¸€ä¸ªç‚¹æ˜¾ç¤ºæ•°å€¼
+            // ÔÚµÚÒ»¸öµãºÍ×îºóÒ»¸öµãÏÔÊ¾ÊıÖµ
             if (i == 0) {
                 char scoreText[32];
                 sprintf(scoreText, "Start: %.2f", _scoreHistory[i]);
@@ -216,7 +216,7 @@ void ScoreChart::drawLineChart() {
             }
         }
         
-        // ç»˜åˆ¶è¶‹åŠ¿çº¿ï¼ˆçº¿æ€§å›å½’ï¼‰
+        // »æÖÆÇ÷ÊÆÏß£¨ÏßĞÔ»Ø¹é£©
         if (_dataPointCount >= 3) {
             drawTrendLine(drawNode);
         }
@@ -226,13 +226,13 @@ void ScoreChart::drawLineChart() {
 }
 
 void ScoreChart::drawTrendLine(DrawNode* drawNode) {
-    // è®¡ç®—çº¿æ€§å›å½’
+    // ¼ÆËãÏßĞÔ»Ø¹é
     float sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
     int n = _dataPointCount;
     
     for (int i = 0; i < n; i++) {
-        float x = (float)i / (n - 1); // å½’ä¸€åŒ–xå€¼
-        float y = (_scoreHistory[i] - _minScore) / (_maxScore - _minScore); // å½’ä¸€åŒ–yå€¼
+        float x = (float)i / (n - 1); // ¹éÒ»»¯xÖµ
+        float y = (_scoreHistory[i] - _minScore) / (_maxScore - _minScore); // ¹éÒ»»¯yÖµ
         
         sumX += x;
         sumY += y;
@@ -243,24 +243,44 @@ void ScoreChart::drawTrendLine(DrawNode* drawNode) {
     float slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
     float intercept = (sumY - slope * sumX) / n;
     
-    // ç»˜åˆ¶è¶‹åŠ¿çº¿
+    // »æÖÆÇ÷ÊÆÏß
     float x1 = 0;
     float y1 = intercept;
     float x2 = 1.0f;
     float y2 = slope + intercept;
     
-    // è½¬æ¢ä¸ºå®é™…åæ ‡
+    // ×ª»»ÎªÊµ¼Ê×ø±ê
     float actualX1 = x1 * _chartSize.width;
     float actualY1 = y1 * _chartSize.height;
     float actualX2 = x2 * _chartSize.width;
     float actualY2 = y2 * _chartSize.height;
     
-    // ç»˜åˆ¶è™šçº¿è¶‹åŠ¿çº¿
+    // »æÖÆĞéÏßÇ÷ÊÆÏß
     drawDashedLine(drawNode, Vec2(actualX1, actualY1), Vec2(actualX2, actualY2), Color4F(1, 1, 1, 0.6f), 2.0f);
 }
 
+void ScoreChart::drawDashedLine(DrawNode* drawNode, const Vec2& start, const Vec2& end, const Color4F& color, float dashLength) {
+    Vec2 direction = end - start;
+    float distance = direction.length();
+    direction.normalize();
+    
+    int segments = (int)(distance / dashLength);
+    
+    for (int i = 0; i < segments; i += 2) {
+        Vec2 segmentStart = start + direction * (i * dashLength);
+        Vec2 segmentEnd = start + direction * ((i + 1) * dashLength);
+        
+        // È·±£²»³¬¹ıÖÕµã
+        if ((segmentEnd - start).length() > distance) {
+            segmentEnd = end;
+        }
+        
+        drawNode->drawLine(segmentStart, segmentEnd, color);
+    }
+}
+
 void ScoreChart::drawLabels() {
-    // Yè½´æ ‡ç­¾ï¼ˆåˆ†æ•°ï¼‰
+    // YÖá±êÇ©£¨·ÖÊı£©
     int yLabels = 4;
     for (int i = 0; i <= yLabels; i++) {
         float scoreValue = _minScore + (i * (_maxScore - _minScore)) / yLabels;
@@ -273,13 +293,13 @@ void ScoreChart::drawLabels() {
         scoreLabel->setColor(Color3B(200, 200, 200));
         this->addChild(scoreLabel);
         
-        // Yè½´åˆ»åº¦çº¿
+        // YÖá¿Ì¶ÈÏß
         auto tickDraw = DrawNode::create();
         tickDraw->drawLine(Vec2(0, y), Vec2(5, y), Color4F(1, 1, 1, 0.5f));
         this->addChild(tickDraw);
     }
     
-    // Xè½´æ ‡ç­¾ï¼ˆæ¸¸æˆæ¬¡æ•°ï¼‰
+    // XÖá±êÇ©£¨ÓÎÏ·´ÎÊı£©
     if (_dataPointCount > 1) {
         int xLabels = std::min(_dataPointCount - 1, 5);
         for (int i = 0; i <= xLabels; i++) {
@@ -291,7 +311,7 @@ void ScoreChart::drawLabels() {
                 timeLabel->setColor(Color3B(150, 150, 150));
                 this->addChild(timeLabel);
                 
-                // Xè½´åˆ»åº¦çº¿
+                // XÖá¿Ì¶ÈÏß
                 auto tickDraw = DrawNode::create();
                 tickDraw->drawLine(Vec2(x, 0), Vec2(x, 5), Color4F(1, 1, 1, 0.5f));
                 this->addChild(tickDraw);
@@ -299,7 +319,7 @@ void ScoreChart::drawLabels() {
         }
     }
     
-    // è½´æ ‡é¢˜
+    // Öá±êÌâ
     auto yAxisTitle = Label::createWithSystemFont("Score", "Arial", 10);
     yAxisTitle->setPosition(Vec2(15, _chartSize.height/2));
     yAxisTitle->setRotation(-90);
@@ -311,7 +331,7 @@ void ScoreChart::drawLabels() {
     xAxisTitle->setColor(Color3B(200, 200, 255));
     this->addChild(xAxisTitle);
     
-    // å›¾ä¾‹è¯´æ˜
+    // Í¼ÀıËµÃ÷
     if (_dataPointCount >= 2) {
         auto legend = Label::createWithSystemFont("Green=Progress  Red=Decline", "Arial", 9);
         legend->setPosition(Vec2(_chartSize.width - 80, _chartSize.height - 10));
