@@ -3,6 +3,7 @@
 #include "GameSet.h"
 #include "GameStastis.h"
 #include "GameMyself.h"
+#include "KeySettingScene.h"
 #include <cocos/editor-support/cocostudio/SimpleAudioEngine.h>
 using namespace CocosDenshion;
 
@@ -27,29 +28,32 @@ bool HelloWorld::init()
     // 2. add a menu item with "X" image, which is clicked to quit the program
     //    you may modify it.
     // add a "close" icon to exit the progress. it's an autorelease object
-auto SetItem = MenuItemImage::create("Picture/Butt/Set.png","Picture/Butt/Set.png",
-    CC_CALLBACK_1(HelloWorld::gameset, this));//设置
-auto StaItem = MenuItemImage::create("Picture/Butt/Statistics.png", "Picture/Butt/Statistics.png",
-    CC_CALLBACK_1(HelloWorld::gamesta, this));//统计
-auto MyItem = MenuItemImage::create("Picture/Butt/Myself.png", "Picture/Butt/Myself.png",
-    CC_CALLBACK_1(HelloWorld::gamemyself, this));//本人
-// 添加成绩统计按钮
-auto ScoreItem = MenuItemImage::create("Picture/Butt/Score.png", "Picture/Butt/Score.png",
-    CC_CALLBACK_1(HelloWorld::gameScoreStatistics, this));//成绩查询
+    auto SetItem = MenuItemImage::create("Picture/Butt/Set.png","Picture/Butt/Set.png",
+        CC_CALLBACK_1(HelloWorld::gameset, this));//设置
+    auto StaItem = MenuItemImage::create("Picture/Butt/Statistics.png", "Picture/Butt/Statistics.png",
+        CC_CALLBACK_1(HelloWorld::gamesta, this));//统计
+    auto MyItem = MenuItemImage::create("Picture/Butt/Myself.png", "Picture/Butt/Myself.png",
+        CC_CALLBACK_1(HelloWorld::gamemyself, this));//本人
+    auto KeyItem = MenuItemImage::create("Picture/Butt/KeyConfig.png", "Picture/Butt/KeyConfig.png",
+        CC_CALLBACK_1(HelloWorld::keyconfig, this));//Create new KeyConfig button
+    auto ScoreItem = MenuItemImage::create("Picture/Butt/Score.png", "Picture/Butt/Score.png",
+         CC_CALLBACK_1(HelloWorld::gameScoreStatistics, this));//成绩查询
 
-SetItem->setAnchorPoint(Vec2(1, 0));
-SetItem->setPosition(Vec2(visibleSize.width - 10, 10));
-StaItem->setAnchorPoint(Vec2(1, 0));
-StaItem->setPosition(Vec2(visibleSize.width - 80, 10));
-MyItem->setAnchorPoint(Vec2(1, 0));
-MyItem->setPosition(Vec2(visibleSize.width - 150, 10));
-ScoreItem->setAnchorPoint(Vec2(1, 0));
-ScoreItem->setPosition(Vec2(visibleSize.width - 220, 10)); // 新按钮位置
+    SetItem->setAnchorPoint(Vec2(1, 0));
+    SetItem->setPosition(Vec2(visibleSize.width - 10, 10));
+    StaItem->setAnchorPoint(Vec2(1, 0));
+    StaItem->setPosition(Vec2(visibleSize.width - 80, 10));
+    MyItem->setAnchorPoint(Vec2(1, 0));
+    MyItem->setPosition(Vec2(visibleSize.width - 150, 10));
+    KeyItem->setAnchorPoint(Vec2(1, 0));
+    KeyItem->setPosition(Vec2(visibleSize.width - 220, 10)); //Set button position
+    ScoreItem->setAnchorPoint(Vec2(1, 0));
+    ScoreItem->setPosition(Vec2(visibleSize.width - 290, 10)); // 新按钮位置
 
-// create menu, it's an autorelease object
-auto menu = Menu::create(SetItem, StaItem, MyItem, ScoreItem, NULL); // 添加新按钮
-menu->setPosition(Vec2::ZERO);
-this->addChild(menu, 1);
+    // create menu, it's an autorelease object
+    auto menu = Menu::create(SetItem, StaItem,MyItem,KeyItem,ScoreItem, NULL);
+    menu->setPosition(Vec2::ZERO);
+    this->addChild(menu, 1);
 
     // add a label shows "Press To Enter"
     // create and initialize a label and blink
@@ -141,3 +145,10 @@ void HelloWorld::gamemyself(Ref* pSender)
     Director::getInstance()->pushScene(TransitionFade::create(1.5, scene));
 
 }
+
+void HelloWorld::keyconfig(Ref* pSender)
+{
+    SimpleAudioEngine::getInstance()->playEffect("Music file/Pick.mp3");
+    Scene* scene = KeySettingScene::createScene();
+    Director::getInstance()->pushScene(TransitionFade::create(1.5, scene));
+}//Add keyconfig function implementation

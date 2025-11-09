@@ -2,6 +2,7 @@
 #include "GamePause.h"
 #include "Note_Tap.h"
 #include "Note_Hold.h"
+#include "KeyConfig.h" 
 #include "winuser.h"
 #include <cocos/editor-support/cocostudio/SimpleAudioEngine.h>
 #include "ScoreSystem.h"
@@ -37,8 +38,13 @@ bool GamePlay::init()
 
 	//Background层,tag0,其下的Line,tag0,BackLine,tag1
 	auto Backlayer = LayerColor::create(Color4B::WHITE);
-	std::string filename = "Cover/" + Filename + ".png";
+	std::string filename = getCoverFilePath();
 	auto SkyStriker = Sprite::create(filename);
+	if (!SkyStriker) {
+		// 如果曲绘加载失败，使用默认图片
+		SkyStriker = Sprite::create("Cover/default.png");
+		CCLOG("Failed to load cover for: %s, using default", Filename.c_str());
+	}
 	SkyStriker->setPosition(Vec2(visibleSize.width / 2, visibleSize.height / 2));
 	SkyStriker->setOpacity(255);
 	Backlayer->addChild(SkyStriker, 0);
@@ -61,39 +67,76 @@ bool GamePlay::init()
 	//灯光
 	auto LightingL1 = Sprite::create("Note icon/Left_1.png");
 	LightingL1->setAnchorPoint(Vec2(0, 0));
-	LightingL1->setPosition(Vec2(visibleSize.width / 2-303, 0));
+	LightingL1->setPosition(Vec2(visibleSize.width / 2 - 303, 0));
 	LightingL1->setOpacity(0);
+	LightingL1->setName("LightingL1");
 	Notelayer->addChild(LightingL1, 2);
 	auto LightingL2 = Sprite::create("Note icon/Left_2.png");
 	LightingL2->setAnchorPoint(Vec2(0, 0));
 	LightingL2->setPosition(Vec2(visibleSize.width / 2 - 151, 0));
 	LightingL2->setOpacity(0);
+	LightingL2->setName("LightingL2");
 	Notelayer->addChild(LightingL2, 2);
 	auto LightingR1 = Sprite::create("Note icon/Right_1.png");
 	LightingR1->setAnchorPoint(Vec2(0, 0));
 	LightingR1->setPosition(Vec2(visibleSize.width / 2 + 153, 0));
 	LightingR1->setOpacity(0);
+	LightingR1->setName("LightingR1");
 	Notelayer->addChild(LightingR1, 2);
 	auto LightingR2 = Sprite::create("Note icon/Right_2.png");
 	LightingR2->setAnchorPoint(Vec2(0, 0));
 	LightingR2->setPosition(Vec2(visibleSize.width / 2 + 1, 0));
 	LightingR2->setOpacity(0);
+	LightingR2->setName("LightingR2");
 	Notelayer->addChild(LightingR2, 2);
 
-	//开局显示按键
-	auto BackKey = Sprite::create("Note icon/Key.png");
-	BackKey->setAnchorPoint(Vec2(0.5, 0));
-	BackKey->setPosition(Vec2(visibleSize.width / 2, 0));
-	BackKey->setOpacity(0);
-	Notelayer->addChild(BackKey, 2);
-	auto Delay_1 = DelayTime::create(1.0f);
-	auto Fade_1 = FadeTo::create(1.0f, 0);
-	auto Delay_2 = DelayTime::create(3.0f);
-	auto Fade_2 = FadeTo::create(1.0f, 255);
-	auto Disappear = Sequence::create(Delay_1, Fade_2, Delay_2, Fade_1, NULL);
-	BackKey->runAction(Disappear);
+	// Display currently bound keys at the start
+	auto keyConfig = KeyConfig::getInstance();
 
-	//Combo计数
+	// Create key display container
+	auto keyDisplayLayer = Layer::create();
+	keyDisplayLayer->setPosition(Vec2(visibleSize.width / 2 - 303.0f, 0.0f));
+	keyDisplayLayer->setOpacity(0);
+	Notelayer->addChild(keyDisplayLayer, 2);
+
+	//4 track positions (aligned with note tracks)
+	float trackPositions[4] = { 75.0f, 227.0f, 379.0f, 531.0f };
+
+	// Create key displays for each track
+	for (int i = 0; i < 4; i++) {
+		// Key background
+		auto drawNode = DrawNode::create();
+		drawNode->drawSolidCircle(Vec2(0.0f, 0.0f), 20.0f, 0, 16, Color4F(0.1f, 0.1f, 0.1f, 0.8f));
+		drawNode->drawCircle(Vec2(0.0f, 0.0f), 20.0f, 0, 16, false, Color4F(1.0f, 1.0f, 1.0f, 0.5f));
+
+		auto keyBg = Sprite::create();
+		keyBg->addChild(drawNode);
+		keyBg->setPosition(Vec2(trackPositions[i], 40.0f));
+		keyDisplayLayer->addChild(keyBg);
+
+		// Key text
+		auto keyCode = keyConfig->getKeyForTrack(i);
+		std::string keyName = KeyConfig::getKeyDisplayName(keyCode);
+		auto keyLabel = Label::createWithTTF(keyName, "fonts/arial.ttf", 18);
+		keyLabel->setPosition(Vec2(trackPositions[i], 40.0f));
+		keyLabel->setTextColor(Color4B::WHITE);
+		keyLabel->enableOutline(Color4B::BLACK, 2);
+		keyDisplayLayer->addChild(keyLabel);
+	}
+
+	// Animation effects
+	auto delay1 = DelayTime::create(1.0f);
+	auto fadeIn = FadeIn::create(0.8f);
+	auto delay2 = DelayTime::create(3.0f);
+	auto fadeOut = FadeOut::create(0.8f);
+	auto remove = CallFunc::create([keyDisplayLayer]() {
+		keyDisplayLayer->removeFromParent();
+		});
+
+	auto sequence = Sequence::create(delay1, fadeIn, delay2, fadeOut, remove, nullptr);
+	keyDisplayLayer->runAction(sequence);
+	
+	//Combo璁℃暟
 	auto Combo = Label::createWithTTF("COMBO", "fonts/arial.ttf", 48);
 	Combo->setTextColor(Color4B(139,215,250,255));
 	auto Number_Combo = Label::createWithTTF(" ", "fonts/arial.ttf", 48);
@@ -146,140 +189,67 @@ bool GamePlay::init()
 
 	// creating a keyboard event listener
 	auto listener = EventListenerKeyboard::create();
-	//lambda匿名的函数对象
+	//lambda鍖垮悕鐨勫嚱鏁板璞�
 	listener->onKeyPressed = [=](EventKeyboard::KeyCode keyCode, Event* event) {
-		/*因为EventKeyboard::KeyCode::KEY每帧只能检测一个按键，而音游对按键时机的要求较高
-		比如，双押的同时按下
-		所以就用GetAsyncKeyState()作为按下时处理*/
-		/*测试
-		if(keyCode == EventKeyboard::KeyCode::KEY_W)
-		{
-			SimpleAudioEngine::getInstance()->playEffect("Music file/Tap_Good.mp3");
-			auto note = new Note(1, 1, 1);
-			note->initWithFile("Note icon/Note_tap.png");
-			note->setAnchorPoint(Vec2(0, 1));
-			note->setPosition(visibleSize.width/2 - 303, 1000);
-			auto Note_layer = (LayerColor*)this->getChildByTag(5);
-			Note_layer->addChild(note, 1);
-			note->Note_down();
-		}
-		if (keyCode == EventKeyboard::KeyCode::KEY_E)
-		{
-			SimpleAudioEngine::getInstance()->playEffect("Music file/Tap_Good.mp3");
-			auto note = new Note(2, 1, 2);
-			note->initWithFile("Note icon/Note_tap.png");
-			note->setAnchorPoint(Vec2(0, 1));
-			note->setPosition(visibleSize.width / 2 - 151, 1000);
-			auto Note_layer = (LayerColor*)this->getChildByTag(5);
-			Note_layer->addChild(note, 1);
-			note->Note_down();
-		}
-		if (keyCode == EventKeyboard::KeyCode::KEY_U)
-		{
-			SimpleAudioEngine::getInstance()->playEffect("Music file/Tap_Perfect.mp3");
-			auto note = new Note(3, 1, 4);
-			note->initWithFile("Note icon/Note_tap.png");
-			note->setAnchorPoint(Vec2(0, 1));
-			note->setPosition(visibleSize.width / 2 + 1, 1000);
-			auto Note_layer = (LayerColor*)this->getChildByTag(5);
-			Note_layer->addChild(note, 1);
-			note->Note_down();
-		}
-		if (keyCode == EventKeyboard::KeyCode::KEY_I)
-		{
-			SimpleAudioEngine::getInstance()->playEffect("Music file/Tap_Perfect.mp3");
-			auto note = new Note(4, 1, 8);
-			note->initWithFile("Note icon/Note_tap.png");
-			note->setAnchorPoint(Vec2(0, 1));
-			note->setPosition(visibleSize.width / 2 + 153, 1000);
-			auto Note_layer = (LayerColor*)this->getChildByTag(5);
-			Note_layer->addChild(note, 1);
-			note->Note_down();
-		}
-		if (keyCode == EventKeyboard::KeyCode::KEY_R)
-		{
-			auto note = new Hold(1, 500, 1);
-			note->Hold_length = note->Hold_y;
-			note->initWithFile("Note icon/Note_hold.png");
-			note->setCapInsets(Rect(3, 3, 143, 143));
-			//设置中心位置，拉伸音符
-			note->setAnchorPoint(Vec2(0, 1));
-			note->setPosition(visibleSize.width / 2 - 303, 1000);
-			note->setContentSize(Size(150, note->Hold_y));
-			auto Note_layer = (LayerColor*)this->getChildByTag(5);
-			Note_layer->addChild(note, 1);
-			note->Hold_down();
-		}*/
-		if (GetAsyncKeyState('A') & 0x8000 && Note_strack[0] != -1)
+		auto keyConfig = KeyConfig::getInstance();//Get configuration instance
+		// Use configured key detection
+		if (KeyConfig::isKeyPressed(keyConfig->getKeyForTrack(0)) && Note_strack[0] != -1)
 		{
 			Note_strack[0] = 1;
-			//灯光亮起
+			//Light turns on
 			LightingL1->setOpacity(255);
 		}
-		if (GetAsyncKeyState('S') & 0x8000 && Note_strack[1] != -1)
+		if (KeyConfig::isKeyPressed(keyConfig->getKeyForTrack(1)) && Note_strack[1] != -1)
 		{
 			Note_strack[1] = 1;
 			LightingL2->setOpacity(255);
 		}
-		if (GetAsyncKeyState(VK_OEM_1) & 0x8000 && Note_strack[2] != -1)
+		if (KeyConfig::isKeyPressed(keyConfig->getKeyForTrack(2)) && Note_strack[2] != -1)
 		{
 			Note_strack[2] = 1;
 			LightingR2->setOpacity(255);
 		}
-		if (GetAsyncKeyState(VK_OEM_7) & 0x8000 && Note_strack[3] != -1)
+		if (KeyConfig::isKeyPressed(keyConfig->getKeyForTrack(3)) && Note_strack[3] != -1)
 		{
 			Note_strack[3] = 1;
 			LightingR1->setOpacity(255);
 		}
-		/*测试谱子
-		else if (keyCode == EventKeyboard::KeyCode::KEY_A)
-		{
-			char table[32];
-			auto Timelabel2 = (Label*)this->getChildByTag(2);
-			if (!Game_file.empty())
-			{
-				sprintf(table, "Musicscore:%f", Game_file.front());
-				Game_file.pop_front();
-			}
-			Timelabel2->setString(table);
-		}
-		if (keyCode == EventKeyboard::KeyCode::KEY_SPACE && !Play_End)
-		{
-			GameEnd();
-		}*/
 	};
-	//松开按键时
+
+	//鏉惧紑鎸夐敭鏃�
 	listener->onKeyReleased = [=](EventKeyboard::KeyCode keyCode, Event* event) {
+		auto keyConfig = KeyConfig::getInstance();
+		
 		if (keyCode == EventKeyboard::KeyCode::KEY_ESCAPE && !Play_End && !Play_TimeStop)
 		{
 			Play_TimeStop = true;
 			SimpleAudioEngine::getInstance()->pauseBackgroundMusic();
 			GamePause(this);
 		}
-			
-		if (keyCode == EventKeyboard::KeyCode::KEY_ENTER && Play_End) 
+
+		if (keyCode == EventKeyboard::KeyCode::KEY_ENTER && Play_End)
 		{
 			backmeun(this);
 		}
-		
-		//恢复按键锁定,没那么严格就直接用EventKeyboard::KeyCode了
-		else if (keyCode == EventKeyboard::KeyCode::KEY_A)
+
+		//Restore key lock, use configured keys
+		if (keyCode == keyConfig->getKeyForTrack(0))
 		{
 			Note_strack[0] = 0;
-			//灯光熄火
+			//Lights turn off
 			LightingL1->setOpacity(0);
 		}
-		else if (keyCode == EventKeyboard::KeyCode::KEY_S)
+		else if (keyCode == keyConfig->getKeyForTrack(1))
 		{
 			Note_strack[1] = 0;
 			LightingL2->setOpacity(0);
 		}
-		else if (keyCode == EventKeyboard::KeyCode::KEY_SEMICOLON)
+		else if (keyCode == keyConfig->getKeyForTrack(2))
 		{
 			Note_strack[2] = 0;
 			LightingR2->setOpacity(0);
 		}
-		else if (keyCode == EventKeyboard::KeyCode::KEY_APOSTROPHE)
+		else if (keyCode == keyConfig->getKeyForTrack(3))
 		{
 			Note_strack[3] = 0;
 			LightingR1->setOpacity(0);
@@ -288,10 +258,112 @@ bool GamePlay::init()
 	_eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
 
 	//读取Json文件
-	std::string Rec = FileUtils::getInstance()->getStringFromFile("Record/GameRecord.json");
-	RecJson.Parse<rapidjson::kParseDefaultFlags>(Rec.c_str());
+	std::string recordPath = getRecordFilePath();
+	std::string Rec = FileUtils::getInstance()->getStringFromFile(recordPath);
+	if (Rec.empty()) {
+		CCLOG("Failed to load record file: %s", recordPath.c_str());
+		// 可以创建一个空的JSON文档作为备用
+		RecJson.SetObject();
+	}
+	else {
+		RecJson.Parse<rapidjson::kParseDefaultFlags>(Rec.c_str());
+		if (RecJson.HasParseError()) {
+			CCLOG("JSON parse error in record file: %s", recordPath.c_str());
+			RecJson.SetObject();
+		}
+	}
 
 	return true;
+}
+
+std::string GamePlay::getCustomSongPath()
+{
+	// 检查是否是自定义歌曲（通过判断歌曲名是否在Custom文件夹中存在）
+	std::string customPath = "Custom/" + Filename;
+	if (FileUtils::getInstance()->isDirectoryExist(customPath)) {
+		return customPath;
+	}
+	return ""; // 返回空字符串表示不是自定义歌曲
+}
+
+std::string GamePlay::getMusicFilePath()
+{
+	std::string customPath = getCustomSongPath();
+	if (!customPath.empty()) {
+		// 自定义歌曲：尝试多种可能的音乐文件扩展名
+		std::string paths[] = {
+			customPath + "/music.mp3",
+			customPath + "/" + Filename + ".mp3",
+		};
+
+		for (const auto& path : paths) {
+			if (FileUtils::getInstance()->isFileExist(path))
+				return path;
+		}
+	}
+	// 原版歌曲
+	return "Music library/" + Filename + ".mp3";
+}
+
+std::string GamePlay::getChartFilePath()
+{
+	std::string customPath = getCustomSongPath();
+	if (!customPath.empty()) {
+		// 自定义歌曲：优先使用JSON格式谱面
+		std::string jsonPath = customPath + "/" + Diff + ".json";
+		if (FileUtils::getInstance()->isFileExist(jsonPath)) {
+			return jsonPath;
+		}
+
+		// 如果没有JSON，尝试TXT格式
+		std::string txtPath = customPath + "/" + Diff + ".txt";
+		if (FileUtils::getInstance()->isFileExist(txtPath)) {
+			return txtPath;
+		}
+	}
+
+	// 原版歌曲
+	return "Music score/" + Diff + "_" + Filename + ".txt";
+}
+
+std::string GamePlay::getCoverFilePath()
+{
+	std::string customPath = getCustomSongPath();
+	if (!customPath.empty()) {
+		// 自定义歌曲：尝试多种可能的曲绘文件名
+		std::string paths[] = {
+			customPath + "/cover.png",
+			customPath + "/" + Filename + ".png",
+			"Cover/" + Filename + ".png"  // 回退到原版路径
+		};
+
+		for (const auto& path : paths) {
+			if (FileUtils::getInstance()->isFileExist(path)) {
+				return path;
+			}
+		}
+	}
+
+	// 原版歌曲
+	return "Cover/" + Filename + ".png";
+}
+
+std::string GamePlay::getRecordFilePath()
+{
+	std::string customPath = getCustomSongPath();
+	if (!customPath.empty()) {
+		// 自定义歌曲：使用歌曲文件夹内的record.json
+		std::string customRecordPath = customPath + "/record.json";
+		if (FileUtils::getInstance()->isFileExist(customRecordPath)) {
+			return customRecordPath;
+		}
+		else {
+			CCLOG("Custom record file not found: %s, using default record", customRecordPath.c_str());
+		}
+	}
+
+	// 原版歌曲：使用原来的记录文件
+	return "Record/GameRecord.json";
 }
 
 void GamePlay::menuCloseCallback(Ref* pSender)
@@ -315,11 +387,18 @@ void GamePlay::Update_count(float dt)
 
 	//定点播放音乐
 	else if (Game_time == (int)((Director::getInstance()->getVisibleSize().height - 165)
-		/ (Play_speed*Play_Sp)))
+		/ (Play_speed * Play_Sp)))
 	{
-		std::string filename = "Music library/" + Filename + ".mp3";
-		SimpleAudioEngine::getInstance()->playBackgroundMusic(filename.data());
-		Play_Start = true;
+		std::string filename = getMusicFilePath();
+		if (FileUtils::getInstance()->isFileExist(filename)) {
+			SimpleAudioEngine::getInstance()->playBackgroundMusic(filename.data());
+			Play_Start = true;
+		}
+		else {
+			CCLOG("Music file not found: %s", filename.c_str());
+			// 即使音乐文件不存在，也标记为开始，让游戏继续
+			Play_Start = true;
+		}
 	}
 	//结束力
 	else if ((!SimpleAudioEngine::getInstance()->isBackgroundMusicPlaying()) 
@@ -375,6 +454,32 @@ void GamePlay::Update_count(float dt)
 	else if ((int)(Game_file.front()*120) == Game_time)//生成时间
 	{
 		CreateNote(Game_time);
+	}
+}
+
+	// Key detection section
+	auto keyConfig = KeyConfig::getInstance();
+
+	// Use configured key detection
+	if (isKeyPressed(keyConfig->getKeyForTrack(0)) && Note_strack[0] != -1) {
+		Note_strack[0] = 1;
+		auto LightingL1 = (Sprite*)this->getChildByTag(5)->getChildByName("LightingL1");
+		if (LightingL1) LightingL1->setOpacity(255);
+	}
+	if (isKeyPressed(keyConfig->getKeyForTrack(1)) && Note_strack[1] != -1) {
+		Note_strack[1] = 1;
+		auto LightingL2 = (Sprite*)this->getChildByTag(5)->getChildByName("LightingL2");
+		if (LightingL2) LightingL2->setOpacity(255);
+	}
+	if (isKeyPressed(keyConfig->getKeyForTrack(2)) && Note_strack[2] != -1) {
+		Note_strack[2] = 1;
+		auto LightingR2 = (Sprite*)this->getChildByTag(5)->getChildByName("LightingR2");
+		if (LightingR2) LightingR2->setOpacity(255);
+	}
+	if (isKeyPressed(keyConfig->getKeyForTrack(3)) && Note_strack[3] != -1) {
+		Note_strack[3] = 1;
+		auto LightingR1 = (Sprite*)this->getChildByTag(5)->getChildByName("LightingR1");
+		if (LightingR1) LightingR1->setOpacity(255);
 	}
 }
 
@@ -443,13 +548,23 @@ void GamePlay::CreateNote(int time)
 
 void GamePlay::GamePre()
 {
-	std::string filename = "Music library/" + Filename + ".mp3";
-	//预加载歌曲
-	SimpleAudioEngine::getInstance()->preloadEffect(filename.data());
+	std::string filename = getMusicFilePath();
+	if (FileUtils::getInstance()->isFileExist(filename)) {
+		SimpleAudioEngine::getInstance()->preloadBackgroundMusic(filename.c_str());
+	}
+	else {
+		CCLOG("Failed to preload music: %s", filename.c_str());
+	}
 	//读取谱子文件
 	auto MusicFile = FileUtils::getInstance();
-	filename = "Music score/"+ Diff+"_" + Filename + ".txt";
+	filename = getChartFilePath();
 	auto Musicscore = MusicFile->getStringFromFile(filename);
+
+	if (Musicscore.empty()) {
+		CCLOG("Failed to load chart file: %s", filename.c_str());
+		Director::getInstance()->popScene();
+		return;
+	}
 	//字符串转化为float，扔进list
 	char Temporary[12] = { 0 };
 	int i, tk;
@@ -535,8 +650,16 @@ void GamePlay::GameEnd()
 	auto GameName = Label::createWithTTF(Filename, "fonts/arial.ttf", 42);
 	GameEnd->addChild(GameName, 1);
 	GameName->setPosition(Vec2(710, 405));
-	sprintf(Temporary, " Lv.%d", RecJson["Escaping Gravity -TheFatRat"]["Diff"][Diff.c_str()].GetInt());
-	auto GameDiff = Label::createWithTTF(Diff + Temporary, "fonts/arial.ttf", 42);
+	// 修改评级显示部分
+	std::string levelText = Diff;
+	if (RecJson.HasMember(Filename.c_str()) &&
+		RecJson[Filename.c_str()].HasMember("Diff") &&
+		RecJson[Filename.c_str()]["Diff"].HasMember(Diff.c_str())) {
+		sprintf(Temporary, " Lv.%d", RecJson[Filename.c_str()]["Diff"][Diff.c_str()].GetInt());
+		levelText += Temporary;
+	}
+
+	auto GameDiff = Label::createWithTTF(levelText, "fonts/arial.ttf", 42);
 	GameDiff->setAnchorPoint(Vec2(1, 0.5));
 	GameEnd->addChild(GameDiff, 1);
 	GameDiff->setPosition(Vec2(955, 345));
@@ -579,24 +702,112 @@ void GamePlay::GameEnd()
 	GameLevel->setPosition(Vec2(620, 680));
 
 	//结算到文件
-	if (RecJson[Filename.c_str()]["Score"][Diff.c_str()].GetInt() < Play_Score)
-	{
-		RecJson[Filename.c_str()]["Score"][Diff.c_str()].SetInt(Play_Score);
-		RecJson[Filename.c_str()]["Level"][Diff.c_str()].SetString(Play_level.c_str(), Play_level.length());
+	if (RecJson.HasMember(Filename.c_str())) {
+		if (RecJson[Filename.c_str()].HasMember("Score") &&
+			RecJson[Filename.c_str()]["Score"].HasMember(Diff.c_str())) {
+			if (RecJson[Filename.c_str()]["Score"][Diff.c_str()].GetInt() < Play_Score) {
+				RecJson[Filename.c_str()]["Score"][Diff.c_str()].SetInt(Play_Score);
+				RecJson[Filename.c_str()]["Level"][Diff.c_str()].SetString(Play_level.c_str(), Play_level.length());
+			}
+		}
+		else {
+			// 如果不存在对应的难度记录，创建它
+			if (!RecJson[Filename.c_str()].HasMember("Score")) {
+				rapidjson::Value scoreObj(rapidjson::kObjectType);
+				RecJson[Filename.c_str()].AddMember("Score", scoreObj, RecJson.GetAllocator());
+			}
+			if (!RecJson[Filename.c_str()].HasMember("Level")) {
+				rapidjson::Value levelObj(rapidjson::kObjectType);
+				RecJson[Filename.c_str()].AddMember("Level", levelObj, RecJson.GetAllocator());
+			}
+			if (!RecJson[Filename.c_str()].HasMember("Diff")) {
+				rapidjson::Value diffObj(rapidjson::kObjectType);
+				RecJson[Filename.c_str()].AddMember("Diff", diffObj, RecJson.GetAllocator());
+			}
+
+			RecJson[Filename.c_str()]["Score"].AddMember(
+				rapidjson::Value(Diff.c_str(), RecJson.GetAllocator()).Move(),
+				rapidjson::Value(Play_Score).Move(),
+				RecJson.GetAllocator()
+			);
+			RecJson[Filename.c_str()]["Level"].AddMember(
+				rapidjson::Value(Diff.c_str(), RecJson.GetAllocator()).Move(),
+				rapidjson::Value(Play_level.c_str(), RecJson.GetAllocator()).Move(),
+				RecJson.GetAllocator()
+			);
+
+			// 这里需要根据实际谱面难度设置Diff值，你可能需要从谱面文件中读取
+			int diffValue = 0;
+			if (Diff == "Ez") diffValue = 3;
+			else if (Diff == "Hd") diffValue = 6;
+			else if (Diff == "In") diffValue = 9;
+
+			RecJson[Filename.c_str()]["Diff"].AddMember(
+				rapidjson::Value(Diff.c_str(), RecJson.GetAllocator()).Move(),
+				rapidjson::Value(diffValue).Move(),
+				RecJson.GetAllocator()
+			);
+		}
 	}
-	//将json数据重新写入文件中
+	else {
+		// 如果歌曲记录不存在，创建完整的记录结构
+		rapidjson::Value songObj(rapidjson::kObjectType);
+
+		// 创建Score对象
+		rapidjson::Value scoreObj(rapidjson::kObjectType);
+		scoreObj.AddMember(
+			rapidjson::Value(Diff.c_str(), RecJson.GetAllocator()).Move(),
+			rapidjson::Value(Play_Score).Move(),
+			RecJson.GetAllocator()
+		);
+
+		// 创建Level对象
+		rapidjson::Value levelObj(rapidjson::kObjectType);
+		levelObj.AddMember(
+			rapidjson::Value(Diff.c_str(), RecJson.GetAllocator()).Move(),
+			rapidjson::Value(Play_level.c_str(), RecJson.GetAllocator()).Move(),
+			RecJson.GetAllocator()
+		);
+
+		// 创建Diff对象
+		rapidjson::Value diffObj(rapidjson::kObjectType);
+		int diffValue = 0;
+		if (Diff == "Ez") diffValue = 3;
+		else if (Diff == "Hd") diffValue = 6;
+		else if (Diff == "In") diffValue = 9;
+		diffObj.AddMember(
+			rapidjson::Value(Diff.c_str(), RecJson.GetAllocator()).Move(),
+			rapidjson::Value(diffValue).Move(),
+			RecJson.GetAllocator()
+		);
+
+		songObj.AddMember("Score", scoreObj, RecJson.GetAllocator());
+		songObj.AddMember("Level", levelObj, RecJson.GetAllocator());
+		songObj.AddMember("Diff", diffObj, RecJson.GetAllocator());
+
+		RecJson.AddMember(
+			rapidjson::Value(Filename.c_str(), RecJson.GetAllocator()).Move(),
+			songObj.Move(),
+			RecJson.GetAllocator()
+		);
+	}
+	//灏唈son鏁版嵁閲嶆柊鍐欏叆鏂囦欢涓�
 	StringBuffer buffer;
 	rapidjson::Writer<StringBuffer> writer(buffer);
 	RecJson.Accept(writer);
-	//FILE* Readfile = fopen("Resources/Record/GameRecord.json", "wb");
-	//不知道为什么在这cocos2d-x不能直接用相对路径
-	// 还是不行，相对路径方案失败了
-	// 在vs，直接打开exe，还是steam，它们是各不相同的相对路径读取
-	std::string filepath = FileUtils::getInstance()->fullPathForFilename("Record/GameRecord.json");
+
+	std::string recordPath = getRecordFilePath();
+	std::string filepath = FileUtils::getInstance()->fullPathForFilename(recordPath);
 	FILE* Readfile = fopen(filepath.c_str(), "wb");
-	fputs(buffer.GetString(), Readfile);
-	fclose(Readfile);
-	//以下为新增代码！！！！！
+	if (Readfile) {
+		fputs(buffer.GetString(), Readfile);
+		fclose(Readfile);
+		CCLOG("Record saved to: %s", filepath.c_str());
+	}
+	else {
+		CCLOG("Failed to save record to: %s", filepath.c_str());
+	}
+  	//以下为新增代码！！！！！
     // 添加到评分系统
     int difficultyLevel = RecJson[Filename.c_str()]["Diff"][Diff.c_str()].GetInt();
     ScoreSystem::getInstance()->addSongScore(Filename, Diff, Play_Score, difficultyLevel);
@@ -655,5 +866,10 @@ void GamePlay::backmeun(Ref* pSender)
 	Play_TimeResume = false;
 	SimpleAudioEngine::getInstance()->stopBackgroundMusic(true);
 	Director::getInstance()->popScene();
-
 }
+
+bool GamePlay::isKeyPressed(EventKeyboard::KeyCode keyCode) {
+    return KeyConfig::isKeyPressed(keyCode);
+}//Bound keys
+
+

@@ -51,7 +51,7 @@ bool AppDelegate::applicationDidFinishLaunching() {
     if(!glview) {
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32) || (CC_TARGET_PLATFORM == CC_PLATFORM_MAC) || (CC_TARGET_PLATFORM == CC_PLATFORM_LINUX)
         //全屏大小
-        glview = GLViewImpl::createWithFullScreen("Shadow Of Sound");
+        glview = GLViewImpl::create("Shadow Of Sound");
         //分辨率1080p
         glview->setFrameSize(1920, 1080);
 #else
@@ -67,7 +67,7 @@ bool AppDelegate::applicationDidFinishLaunching() {
     director->setAnimationInterval(1.0f / 120);
 
     // Set the design resolution
-    glview->setDesignResolutionSize(GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN), ResolutionPolicy::NO_BORDER);
+    glview->setDesignResolutionSize(1920, 1080, ResolutionPolicy::SHOW_ALL);
     
 
 
