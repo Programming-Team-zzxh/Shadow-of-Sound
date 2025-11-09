@@ -2,6 +2,7 @@
 #include "GamePause.h"
 #include "Note_Tap.h"
 #include "Note_Hold.h"
+#include "KeyConfig.h" 
 #include "winuser.h"
 
 #include <cocos/editor-support/cocostudio/SimpleAudioEngine.h>
@@ -10,13 +11,13 @@ using namespace rapidjson;
 
 USING_NS_CC;
 
-int Note_strack[4] = { 0 };//¹ìµÀ
-float Play_Sp;//ËÙ¶Èµ÷½Ú
-extern std::string Diff;//ÄÑ¶ÈÏà¹Ø
-extern std::string Filename;//ÎÄ¼şÃû
-bool Play_TimeStop = false;//Ê±Í£
-bool Play_TimeResume = false;//Ê±Ğø
-int PLay_Back = 0;//ÅĞ¶Ï·µ»Ø/ÖØ¿ª
+int Note_strack[4] = { 0 };//æã„©äº¾
+float Play_Sp;//é–«ç†·å®³ç’‹å†­å¦­
+extern std::string Diff;//é—…æƒ§å®³é©ç¨¿å§
+extern std::string Filename;//é‚å›¦æ¬¢éšï¿½
+bool Play_TimeStop = false;//éƒè·ºä» 
+bool Play_TimeResume = false;//éƒå‰ç”»
+int PLay_Back = 0;//é’ã‚†æŸ‡æ©æ–¿æ´–/é–²å¶…ç´‘
 
 Scene* GamePlay::createScene()
 {
@@ -33,12 +34,12 @@ bool GamePlay::init()
 	auto visibleSize = Director::getInstance()->getVisibleSize();
 	Vec2 origin = Director::getInstance()->getVisibleOrigin();
 
-	//Background²ã,tag0,ÆäÏÂµÄLine,tag0,BackLine,tag1
+	//Backgroundçï¿½,tag0,éæœµç¬…é¨å‡©ine,tag0,BackLine,tag1
 	auto Backlayer = LayerColor::create(Color4B::WHITE);
 	std::string filename = getCoverFilePath();
 	auto SkyStriker = Sprite::create(filename);
 	if (!SkyStriker) {
-		// Èç¹ûÇú»æ¼ÓÔØÊ§°Ü£¬Ê¹ÓÃÄ¬ÈÏÍ¼Æ¬
+		// å¦‚æœæ›²ç»˜åŠ è½½å¤±è´¥ï¼Œä½¿ç”¨é»˜è®¤å›¾ç‰‡
 		SkyStriker = Sprite::create("Cover/default.png");
 		CCLOG("Failed to load cover for: %s, using default", Filename.c_str());
 	}
@@ -51,70 +52,107 @@ bool GamePlay::init()
 	(visibleSize.width / 2 + 303, 146), Color4F::WHITE);
 	Backlayer->addChild(Line, 1, 0);
 	this->addChild(Backlayer, 1, 0);
-	//±³¾°
+	//é‘³å±¾æ«™
 	auto BackLine = Sprite::create("Note icon/BackLine2.png");
 	BackLine->setAnchorPoint(Vec2(0, 1));
 	BackLine->setPosition(Vec2(0, visibleSize.height));
 	BackLine->setOpacity(200);
 	Backlayer->addChild(BackLine, 0, 1);
 
-	//NoteÒô·û²ã
+	//Noteé—Šå´‡îƒçï¿½
 	auto Notelayer = LayerColor::create();
 	this->addChild(Notelayer, 1, 5);
-	//µÆ¹â
+	//éîˆšåœ
 	auto LightingL1 = Sprite::create("Note icon/Left_1.png");
 	LightingL1->setAnchorPoint(Vec2(0, 0));
-	LightingL1->setPosition(Vec2(visibleSize.width / 2-303, 0));
+	LightingL1->setPosition(Vec2(visibleSize.width / 2 - 303, 0));
 	LightingL1->setOpacity(0);
+	LightingL1->setName("LightingL1");
 	Notelayer->addChild(LightingL1, 2);
 	auto LightingL2 = Sprite::create("Note icon/Left_2.png");
 	LightingL2->setAnchorPoint(Vec2(0, 0));
 	LightingL2->setPosition(Vec2(visibleSize.width / 2 - 151, 0));
 	LightingL2->setOpacity(0);
+	LightingL2->setName("LightingL2");
 	Notelayer->addChild(LightingL2, 2);
 	auto LightingR1 = Sprite::create("Note icon/Right_1.png");
 	LightingR1->setAnchorPoint(Vec2(0, 0));
 	LightingR1->setPosition(Vec2(visibleSize.width / 2 + 153, 0));
 	LightingR1->setOpacity(0);
+	LightingR1->setName("LightingR1");
 	Notelayer->addChild(LightingR1, 2);
 	auto LightingR2 = Sprite::create("Note icon/Right_2.png");
 	LightingR2->setAnchorPoint(Vec2(0, 0));
 	LightingR2->setPosition(Vec2(visibleSize.width / 2 + 1, 0));
 	LightingR2->setOpacity(0);
+	LightingR2->setName("LightingR2");
 	Notelayer->addChild(LightingR2, 2);
 
-	//¿ª¾ÖÏÔÊ¾°´¼ü
-	auto BackKey = Sprite::create("Note icon/Key.png");
-	BackKey->setAnchorPoint(Vec2(0.5, 0));
-	BackKey->setPosition(Vec2(visibleSize.width / 2, 0));
-	BackKey->setOpacity(0);
-	Notelayer->addChild(BackKey, 2);
-	auto Delay_1 = DelayTime::create(1.0f);
-	auto Fade_1 = FadeTo::create(1.0f, 0);
-	auto Delay_2 = DelayTime::create(3.0f);
-	auto Fade_2 = FadeTo::create(1.0f, 255);
-	auto Disappear = Sequence::create(Delay_1, Fade_2, Delay_2, Fade_1, NULL);
-	BackKey->runAction(Disappear);
+	// Display currently bound keys at the start
+	auto keyConfig = KeyConfig::getInstance();
 
-	//Combo¼ÆÊı
+	// Create key display container
+	auto keyDisplayLayer = Layer::create();
+	keyDisplayLayer->setPosition(Vec2(visibleSize.width / 2 - 303.0f, 0.0f));
+	keyDisplayLayer->setOpacity(0);
+	Notelayer->addChild(keyDisplayLayer, 2);
+
+	//4 track positions (aligned with note tracks)
+	float trackPositions[4] = { 75.0f, 227.0f, 379.0f, 531.0f };
+
+	// Create key displays for each track
+	for (int i = 0; i < 4; i++) {
+		// Key background
+		auto drawNode = DrawNode::create();
+		drawNode->drawSolidCircle(Vec2(0.0f, 0.0f), 20.0f, 0, 16, Color4F(0.1f, 0.1f, 0.1f, 0.8f));
+		drawNode->drawCircle(Vec2(0.0f, 0.0f), 20.0f, 0, 16, false, Color4F(1.0f, 1.0f, 1.0f, 0.5f));
+
+		auto keyBg = Sprite::create();
+		keyBg->addChild(drawNode);
+		keyBg->setPosition(Vec2(trackPositions[i], 40.0f));
+		keyDisplayLayer->addChild(keyBg);
+
+		// Key text
+		auto keyCode = keyConfig->getKeyForTrack(i);
+		std::string keyName = KeyConfig::getKeyDisplayName(keyCode);
+		auto keyLabel = Label::createWithTTF(keyName, "fonts/arial.ttf", 18);
+		keyLabel->setPosition(Vec2(trackPositions[i], 40.0f));
+		keyLabel->setTextColor(Color4B::WHITE);
+		keyLabel->enableOutline(Color4B::BLACK, 2);
+		keyDisplayLayer->addChild(keyLabel);
+	}
+
+	// Animation effects
+	auto delay1 = DelayTime::create(1.0f);
+	auto fadeIn = FadeIn::create(0.8f);
+	auto delay2 = DelayTime::create(3.0f);
+	auto fadeOut = FadeOut::create(0.8f);
+	auto remove = CallFunc::create([keyDisplayLayer]() {
+		keyDisplayLayer->removeFromParent();
+		});
+
+	auto sequence = Sequence::create(delay1, fadeIn, delay2, fadeOut, remove, nullptr);
+	keyDisplayLayer->runAction(sequence);
+	
+	//Comboç’â„ƒæšŸ
 	auto Combo = Label::createWithTTF("COMBO", "fonts/arial.ttf", 48);
 	Combo->setTextColor(Color4B(139,215,250,255));
 	auto Number_Combo = Label::createWithTTF(" ", "fonts/arial.ttf", 48);
 	Number_Combo->setTextColor(Color4B(139, 215, 250, 255));
-	//Notelayer,tag5,ËüµÄCombo,tag0,Number_Combo,tag1,ËüµÄScore,tag2,½áËã»­Ãæ,tag3
+	//Notelayer,tag5,ç€¹å†ªæ®‘Combo,tag0,Number_Combo,tag1,ç€¹å†ªæ®‘Score,tag2,ç¼æ’¶ç•»é¢å©šæ½°,tag3
 	Notelayer->addChild(Combo, 3, 0);
 	Notelayer->addChild(Number_Combo, 3, 1);
 	Combo->setPosition(Vec2(visibleSize.width / 2, 1020));
 	Number_Combo->setPosition(Vec2(visibleSize.width / 2, 965));
 	
-	//¼Æ·Ö
+	//ç’â€³å
 	auto ScoreLable = Label::createWithTTF(" ", "fonts/Saira-Regular.ttf", 30);
 	ScoreLable->setTextColor(Color4B::WHITE);
 	Notelayer->addChild(ScoreLable, 3, 2);
 	ScoreLable->setAnchorPoint(Vec2(1, 1));
 	ScoreLable->setPosition(Vec2(visibleSize.width/2+300, visibleSize.height));
 
-	/*Ôö¼ÓÒ»¸ö¼ÆÊ±Æ÷,tag1
+	/*æ¾§ç‚²å§æ¶“ï¿½æ¶“î‡î…¸éƒè·ºæ«’,tag1
 	auto Timelabel = Label::createWithTTF("Time:0", "fonts/Marker Felt.ttf", 24);
 	Timelabel->setPosition(Vec2(visibleSize.width / 2, visibleSize.height / 2));
 	Timelabel->setTextColor(Color4B::WHITE);
@@ -122,7 +160,7 @@ bool GamePlay::init()
 
 	this->schedule(CC_SCHEDULE_SELECTOR(GamePlay::Update_count));
 
-	//ËÙ¶È,Ez4,Hd6,In8
+	//é–«ç†·å®³,Ez4,Hd6,In8
 	if (Diff == "Ez")
 		Play_speed = 4;
 	else if(Diff == "Hd")
@@ -130,7 +168,7 @@ bool GamePlay::init()
 	else
 		Play_speed = 8;
 
-	/*²âÊÔÆ××ÓÓÃ
+	/*å¨´å¬­ç˜¯ç’‹åç“™é¢ï¿½
 	auto MusicFile = FileUtils::getInstance();
 	auto Musicscore = MusicFile->getStringFromFile("Music score/Escaping Gravity -TheFatRat.txt");
 	auto Timelabel1 = Label::createWithTTF(Musicscore, "fonts/Marker Felt.ttf", 24);
@@ -138,10 +176,10 @@ bool GamePlay::init()
 	Timelabel1->setTextColor(Color4B::BLACK);
 	this->addChild(Timelabel1, 1, 2);*/
 
-	//Éú³ÉÀÖÆ×
+	//é¢ç†¸åšæ¶”æ„¯æ°¨
 	GamePre();
 
-	/*Í¼Ïñ²âÊÔ
+	/*é¥æƒ§å„šå¨´å¬­ç˜¯
 	auto Azelia = Sprite::create("Note icon/Note_tap.png");
 	Azelia->setAnchorPoint(Vec2(0, 1));
 	Azelia->setPosition(Vec2(visibleSize.width / 2, 105));
@@ -149,140 +187,67 @@ bool GamePlay::init()
 
 	// creating a keyboard event listener
 	auto listener = EventListenerKeyboard::create();
-	//lambdaÄäÃûµÄº¯Êı¶ÔÏó
+	//lambdaé–å®æ‚•é¨å‹«åš±éæ¿î‡®ç’ï¿½
 	listener->onKeyPressed = [=](EventKeyboard::KeyCode keyCode, Event* event) {
-		/*ÒòÎªEventKeyboard::KeyCode::KEYÃ¿Ö¡Ö»ÄÜ¼ì²âÒ»¸ö°´¼ü£¬¶øÒôÓÎ¶Ô°´¼üÊ±»úµÄÒªÇó½Ï¸ß
-		±ÈÈç£¬Ë«ÑºµÄÍ¬Ê±°´ÏÂ
-		ËùÒÔ¾ÍÓÃGetAsyncKeyState()×÷Îª°´ÏÂÊ±´¦Àí*/
-		/*²âÊÔ
-		if(keyCode == EventKeyboard::KeyCode::KEY_W)
-		{
-			SimpleAudioEngine::getInstance()->playEffect("Music file/Tap_Good.mp3");
-			auto note = new Note(1, 1, 1);
-			note->initWithFile("Note icon/Note_tap.png");
-			note->setAnchorPoint(Vec2(0, 1));
-			note->setPosition(visibleSize.width/2 - 303, 1000);
-			auto Note_layer = (LayerColor*)this->getChildByTag(5);
-			Note_layer->addChild(note, 1);
-			note->Note_down();
-		}
-		if (keyCode == EventKeyboard::KeyCode::KEY_E)
-		{
-			SimpleAudioEngine::getInstance()->playEffect("Music file/Tap_Good.mp3");
-			auto note = new Note(2, 1, 2);
-			note->initWithFile("Note icon/Note_tap.png");
-			note->setAnchorPoint(Vec2(0, 1));
-			note->setPosition(visibleSize.width / 2 - 151, 1000);
-			auto Note_layer = (LayerColor*)this->getChildByTag(5);
-			Note_layer->addChild(note, 1);
-			note->Note_down();
-		}
-		if (keyCode == EventKeyboard::KeyCode::KEY_U)
-		{
-			SimpleAudioEngine::getInstance()->playEffect("Music file/Tap_Perfect.mp3");
-			auto note = new Note(3, 1, 4);
-			note->initWithFile("Note icon/Note_tap.png");
-			note->setAnchorPoint(Vec2(0, 1));
-			note->setPosition(visibleSize.width / 2 + 1, 1000);
-			auto Note_layer = (LayerColor*)this->getChildByTag(5);
-			Note_layer->addChild(note, 1);
-			note->Note_down();
-		}
-		if (keyCode == EventKeyboard::KeyCode::KEY_I)
-		{
-			SimpleAudioEngine::getInstance()->playEffect("Music file/Tap_Perfect.mp3");
-			auto note = new Note(4, 1, 8);
-			note->initWithFile("Note icon/Note_tap.png");
-			note->setAnchorPoint(Vec2(0, 1));
-			note->setPosition(visibleSize.width / 2 + 153, 1000);
-			auto Note_layer = (LayerColor*)this->getChildByTag(5);
-			Note_layer->addChild(note, 1);
-			note->Note_down();
-		}
-		if (keyCode == EventKeyboard::KeyCode::KEY_R)
-		{
-			auto note = new Hold(1, 500, 1);
-			note->Hold_length = note->Hold_y;
-			note->initWithFile("Note icon/Note_hold.png");
-			note->setCapInsets(Rect(3, 3, 143, 143));
-			//ÉèÖÃÖĞĞÄÎ»ÖÃ£¬À­ÉìÒô·û
-			note->setAnchorPoint(Vec2(0, 1));
-			note->setPosition(visibleSize.width / 2 - 303, 1000);
-			note->setContentSize(Size(150, note->Hold_y));
-			auto Note_layer = (LayerColor*)this->getChildByTag(5);
-			Note_layer->addChild(note, 1);
-			note->Hold_down();
-		}*/
-		if (GetAsyncKeyState('A') & 0x8000 && Note_strack[0] != -1)
+		auto keyConfig = KeyConfig::getInstance();//Get configuration instance
+		// Use configured key detection
+		if (KeyConfig::isKeyPressed(keyConfig->getKeyForTrack(0)) && Note_strack[0] != -1)
 		{
 			Note_strack[0] = 1;
-			//µÆ¹âÁÁÆğ
+			//Light turns on
 			LightingL1->setOpacity(255);
 		}
-		if (GetAsyncKeyState('S') & 0x8000 && Note_strack[1] != -1)
+		if (KeyConfig::isKeyPressed(keyConfig->getKeyForTrack(1)) && Note_strack[1] != -1)
 		{
 			Note_strack[1] = 1;
 			LightingL2->setOpacity(255);
 		}
-		if (GetAsyncKeyState(VK_OEM_1) & 0x8000 && Note_strack[2] != -1)
+		if (KeyConfig::isKeyPressed(keyConfig->getKeyForTrack(2)) && Note_strack[2] != -1)
 		{
 			Note_strack[2] = 1;
 			LightingR2->setOpacity(255);
 		}
-		if (GetAsyncKeyState(VK_OEM_7) & 0x8000 && Note_strack[3] != -1)
+		if (KeyConfig::isKeyPressed(keyConfig->getKeyForTrack(3)) && Note_strack[3] != -1)
 		{
 			Note_strack[3] = 1;
 			LightingR1->setOpacity(255);
 		}
-		/*²âÊÔÆ××Ó
-		else if (keyCode == EventKeyboard::KeyCode::KEY_A)
-		{
-			char table[32];
-			auto Timelabel2 = (Label*)this->getChildByTag(2);
-			if (!Game_file.empty())
-			{
-				sprintf(table, "Musicscore:%f", Game_file.front());
-				Game_file.pop_front();
-			}
-			Timelabel2->setString(table);
-		}
-		if (keyCode == EventKeyboard::KeyCode::KEY_SPACE && !Play_End)
-		{
-			GameEnd();
-		}*/
 	};
-	//ËÉ¿ª°´¼üÊ±
+
+	//é‰æƒ§ç´‘é¸å¤æ•­éƒï¿½
 	listener->onKeyReleased = [=](EventKeyboard::KeyCode keyCode, Event* event) {
+		auto keyConfig = KeyConfig::getInstance();
+		
 		if (keyCode == EventKeyboard::KeyCode::KEY_ESCAPE && !Play_End && !Play_TimeStop)
 		{
 			Play_TimeStop = true;
 			SimpleAudioEngine::getInstance()->pauseBackgroundMusic();
 			GamePause(this);
 		}
-			
-		if (keyCode == EventKeyboard::KeyCode::KEY_ENTER && Play_End) 
+
+		if (keyCode == EventKeyboard::KeyCode::KEY_ENTER && Play_End)
 		{
 			backmeun(this);
 		}
-		
-		//»Ö¸´°´¼üËø¶¨,Ã»ÄÇÃ´ÑÏ¸ñ¾ÍÖ±½ÓÓÃEventKeyboard::KeyCodeÁË
-		else if (keyCode == EventKeyboard::KeyCode::KEY_A)
+
+		//Restore key lock, use configured keys
+		if (keyCode == keyConfig->getKeyForTrack(0))
 		{
 			Note_strack[0] = 0;
-			//µÆ¹âÏ¨»ğ
+			//Lights turn off
 			LightingL1->setOpacity(0);
 		}
-		else if (keyCode == EventKeyboard::KeyCode::KEY_S)
+		else if (keyCode == keyConfig->getKeyForTrack(1))
 		{
 			Note_strack[1] = 0;
 			LightingL2->setOpacity(0);
 		}
-		else if (keyCode == EventKeyboard::KeyCode::KEY_SEMICOLON)
+		else if (keyCode == keyConfig->getKeyForTrack(2))
 		{
 			Note_strack[2] = 0;
 			LightingR2->setOpacity(0);
 		}
-		else if (keyCode == EventKeyboard::KeyCode::KEY_APOSTROPHE)
+		else if (keyCode == keyConfig->getKeyForTrack(3))
 		{
 			Note_strack[3] = 0;
 			LightingR1->setOpacity(0);
@@ -290,12 +255,12 @@ bool GamePlay::init()
 	};
 	_eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
 
-	//¶ÁÈ¡JsonÎÄ¼ş
+	//è¯»å–Jsonæ–‡ä»¶
 	std::string recordPath = getRecordFilePath();
 	std::string Rec = FileUtils::getInstance()->getStringFromFile(recordPath);
 	if (Rec.empty()) {
 		CCLOG("Failed to load record file: %s", recordPath.c_str());
-		// ¿ÉÒÔ´´½¨Ò»¸ö¿ÕµÄJSONÎÄµµ×÷Îª±¸ÓÃ
+		// å¯ä»¥åˆ›å»ºä¸€ä¸ªç©ºçš„JSONæ–‡æ¡£ä½œä¸ºå¤‡ç”¨
 		RecJson.SetObject();
 	}
 	else {
@@ -311,19 +276,19 @@ bool GamePlay::init()
 
 std::string GamePlay::getCustomSongPath()
 {
-	// ¼ì²éÊÇ·ñÊÇ×Ô¶¨Òå¸èÇú£¨Í¨¹ıÅĞ¶Ï¸èÇúÃûÊÇ·ñÔÚCustomÎÄ¼ş¼ĞÖĞ´æÔÚ£©
+	// æ£€æŸ¥æ˜¯å¦æ˜¯è‡ªå®šä¹‰æ­Œæ›²ï¼ˆé€šè¿‡åˆ¤æ–­æ­Œæ›²åæ˜¯å¦åœ¨Customæ–‡ä»¶å¤¹ä¸­å­˜åœ¨ï¼‰
 	std::string customPath = "Custom/" + Filename;
 	if (FileUtils::getInstance()->isDirectoryExist(customPath)) {
 		return customPath;
 	}
-	return ""; // ·µ»Ø¿Õ×Ö·û´®±íÊ¾²»ÊÇ×Ô¶¨Òå¸èÇú
+	return ""; // è¿”å›ç©ºå­—ç¬¦ä¸²è¡¨ç¤ºä¸æ˜¯è‡ªå®šä¹‰æ­Œæ›²
 }
 
 std::string GamePlay::getMusicFilePath()
 {
 	std::string customPath = getCustomSongPath();
 	if (!customPath.empty()) {
-		// ×Ô¶¨Òå¸èÇú£º³¢ÊÔ¶àÖÖ¿ÉÄÜµÄÒôÀÖÎÄ¼şÀ©Õ¹Ãû
+		// è‡ªå®šä¹‰æ­Œæ›²ï¼šå°è¯•å¤šç§å¯èƒ½çš„éŸ³ä¹æ–‡ä»¶æ‰©å±•å
 		std::string paths[] = {
 			customPath + "/music.mp3",
 			customPath + "/" + Filename + ".mp3",
@@ -334,7 +299,7 @@ std::string GamePlay::getMusicFilePath()
 				return path;
 		}
 	}
-	// Ô­°æ¸èÇú
+	// åŸç‰ˆæ­Œæ›²
 	return "Music library/" + Filename + ".mp3";
 }
 
@@ -342,20 +307,20 @@ std::string GamePlay::getChartFilePath()
 {
 	std::string customPath = getCustomSongPath();
 	if (!customPath.empty()) {
-		// ×Ô¶¨Òå¸èÇú£ºÓÅÏÈÊ¹ÓÃJSON¸ñÊ½Æ×Ãæ
+		// è‡ªå®šä¹‰æ­Œæ›²ï¼šä¼˜å…ˆä½¿ç”¨JSONæ ¼å¼è°±é¢
 		std::string jsonPath = customPath + "/" + Diff + ".json";
 		if (FileUtils::getInstance()->isFileExist(jsonPath)) {
 			return jsonPath;
 		}
 
-		// Èç¹ûÃ»ÓĞJSON£¬³¢ÊÔTXT¸ñÊ½
+		// å¦‚æœæ²¡æœ‰JSONï¼Œå°è¯•TXTæ ¼å¼
 		std::string txtPath = customPath + "/" + Diff + ".txt";
 		if (FileUtils::getInstance()->isFileExist(txtPath)) {
 			return txtPath;
 		}
 	}
 
-	// Ô­°æ¸èÇú
+	// åŸç‰ˆæ­Œæ›²
 	return "Music score/" + Diff + "_" + Filename + ".txt";
 }
 
@@ -363,11 +328,11 @@ std::string GamePlay::getCoverFilePath()
 {
 	std::string customPath = getCustomSongPath();
 	if (!customPath.empty()) {
-		// ×Ô¶¨Òå¸èÇú£º³¢ÊÔ¶àÖÖ¿ÉÄÜµÄÇú»æÎÄ¼şÃû
+		// è‡ªå®šä¹‰æ­Œæ›²ï¼šå°è¯•å¤šç§å¯èƒ½çš„æ›²ç»˜æ–‡ä»¶å
 		std::string paths[] = {
 			customPath + "/cover.png",
 			customPath + "/" + Filename + ".png",
-			"Cover/" + Filename + ".png"  // »ØÍËµ½Ô­°æÂ·¾¶
+			"Cover/" + Filename + ".png"  // å›é€€åˆ°åŸç‰ˆè·¯å¾„
 		};
 
 		for (const auto& path : paths) {
@@ -377,7 +342,7 @@ std::string GamePlay::getCoverFilePath()
 		}
 	}
 
-	// Ô­°æ¸èÇú
+	// åŸç‰ˆæ­Œæ›²
 	return "Cover/" + Filename + ".png";
 }
 
@@ -385,7 +350,7 @@ std::string GamePlay::getRecordFilePath()
 {
 	std::string customPath = getCustomSongPath();
 	if (!customPath.empty()) {
-		// ×Ô¶¨Òå¸èÇú£ºÊ¹ÓÃ¸èÇúÎÄ¼ş¼ĞÄÚµÄrecord.json
+		// è‡ªå®šä¹‰æ­Œæ›²ï¼šä½¿ç”¨æ­Œæ›²æ–‡ä»¶å¤¹å†…çš„record.json
 		std::string customRecordPath = customPath + "/record.json";
 		if (FileUtils::getInstance()->isFileExist(customRecordPath)) {
 			return customRecordPath;
@@ -395,7 +360,7 @@ std::string GamePlay::getRecordFilePath()
 		}
 	}
 
-	// Ô­°æ¸èÇú£ºÊ¹ÓÃÔ­À´µÄ¼ÇÂ¼ÎÄ¼ş
+	// åŸç‰ˆæ­Œæ›²ï¼šä½¿ç”¨åŸæ¥çš„è®°å½•æ–‡ä»¶
 	return "Record/GameRecord.json";
 }
 
@@ -416,9 +381,9 @@ void GamePlay::Update_count(float dt)
 		Play_TimeStop = false;
 		SimpleAudioEngine::getInstance()->resumeBackgroundMusic();
 	}
-	else if (Play_TimeStop)return;//Ê±Í£
+	else if (Play_TimeStop)return;//éƒè·ºä» 
 
-	//¶¨µã²¥·ÅÒôÀÖ
+	//ç€¹æ°±å£é¾î…Ÿæ–é—Šå……ç®°
 	else if (Game_time == (int)((Director::getInstance()->getVisibleSize().height - 165)
 		/ (Play_speed * Play_Sp)))
 	{
@@ -429,11 +394,11 @@ void GamePlay::Update_count(float dt)
 		}
 		else {
 			CCLOG("Music file not found: %s", filename.c_str());
-			// ¼´Ê¹ÒôÀÖÎÄ¼ş²»´æÔÚ£¬Ò²±ê¼ÇÎª¿ªÊ¼£¬ÈÃÓÎÏ·¼ÌĞø
+			// å³ä½¿éŸ³ä¹æ–‡ä»¶ä¸å­˜åœ¨ï¼Œä¹Ÿæ ‡è®°ä¸ºå¼€å§‹ï¼Œè®©æ¸¸æˆç»§ç»­
 			Play_Start = true;
 		}
 	}
-	//½áÊøÁ¦
+	//ç¼æ’´æ½«é”ï¿½
 	else if ((!SimpleAudioEngine::getInstance()->isBackgroundMusicPlaying()) 
 		&& Play_Start)
 	{
@@ -445,14 +410,14 @@ void GamePlay::Update_count(float dt)
 	Game_time++;
 
 	auto visibleSize = Director::getInstance()->getVisibleSize();
-	/*²âÊÔ
-	//»ñÈ¡ tag=1 µÄLabel
+	/*å¨´å¬­ç˜¯
+	//é‘¾å³°å½‡ tag=1 é¨å‡©abel
 	char time[32];
 	auto Timelabel = (Label*)this->getChildByTag(1);
 	sprintf(time, "Time:%08d", (int)Game_time/120);
 	Timelabel->setString(time);*/
 
-	//¸üĞÂÒ»ÏÂComboÖµ
+	//é‡å­˜æŸŠæ¶“ï¿½æ¶“å©¥omboéŠï¿½
 	char combo[32];
 	auto ComboNumer = (Label*)(Layer*)this->getChildByTag(5)->getChildByTag(1);
 	sprintf(combo, "%d", Play_Combo);
@@ -461,7 +426,7 @@ void GamePlay::Update_count(float dt)
 		Play_MaxCombo = Play_Combo;
 	static int Cb_one = 0;
 	static int Cb_two = 0;
-	//°ÙcomboÁ£×ÓÌØĞ§
+	//é§ç¶¾omboç»®æ‘ç“™é—è§„æ™¥
 	if (Play_Combo % 100 == 0 && Play_Combo!=0)
 	{
 		if (Cb_one == Cb_two)
@@ -475,18 +440,44 @@ void GamePlay::Update_count(float dt)
 		Cb_two++;
 	}
 
-	//¸üĞÂ·ÖÊı
+	//é‡å­˜æŸŠé’å—˜æšŸ
 	char score[32];
 	auto ScoreNumer = (Label*)(Layer*)this->getChildByTag(5)->getChildByTag(2);
 	sprintf(score, "%07d", Play_Score);
 	ScoreNumer->setString(score);
 
-	//Éú³ÉÆ××Ó
+	//é¢ç†¸åšç’‹åç“™
 	if (Game_file.empty())
 		;
-	else if ((int)(Game_file.front()*120) == Game_time)//Éú³ÉÊ±¼ä
+	else if ((int)(Game_file.front()*120) == Game_time)//é¢ç†¸åšéƒå •æ£¿
 	{
 		CreateNote(Game_time);
+	}
+}
+
+	// Key detection section
+	auto keyConfig = KeyConfig::getInstance();
+
+	// Use configured key detection
+	if (isKeyPressed(keyConfig->getKeyForTrack(0)) && Note_strack[0] != -1) {
+		Note_strack[0] = 1;
+		auto LightingL1 = (Sprite*)this->getChildByTag(5)->getChildByName("LightingL1");
+		if (LightingL1) LightingL1->setOpacity(255);
+	}
+	if (isKeyPressed(keyConfig->getKeyForTrack(1)) && Note_strack[1] != -1) {
+		Note_strack[1] = 1;
+		auto LightingL2 = (Sprite*)this->getChildByTag(5)->getChildByName("LightingL2");
+		if (LightingL2) LightingL2->setOpacity(255);
+	}
+	if (isKeyPressed(keyConfig->getKeyForTrack(2)) && Note_strack[2] != -1) {
+		Note_strack[2] = 1;
+		auto LightingR2 = (Sprite*)this->getChildByTag(5)->getChildByName("LightingR2");
+		if (LightingR2) LightingR2->setOpacity(255);
+	}
+	if (isKeyPressed(keyConfig->getKeyForTrack(3)) && Note_strack[3] != -1) {
+		Note_strack[3] = 1;
+		auto LightingR1 = (Sprite*)this->getChildByTag(5)->getChildByName("LightingR1");
+		if (LightingR1) LightingR1->setOpacity(255);
 	}
 }
 
@@ -508,21 +499,21 @@ void GamePlay::CreateNote(int time)
 {
 	auto visibleSize = Director::getInstance()->getVisibleSize();
 	Game_file.pop_front();
-	int X = Game_file.front();//Éú³É¹ìµÀ
+	int X = Game_file.front();//é¢ç†¸åšæã„©äº¾
 	Game_file.pop_front();
-	float Speed = Game_file.front()*Play_Sp;//ËÙ¶È
+	float Speed = Game_file.front()*Play_Sp;//é–«ç†·å®³
 	Game_file.pop_front();
-	int Y = (int)Game_file.front();//ÀàĞÍ
+	int Y = (int)Game_file.front();//ç»«è¯²ç€·
 	Game_file.pop_front();
 	if (Y == 1)//Tap
 	{
 		auto note = new Note(X, Y, Speed);
-		//ÊÂÊµÉÏ£¬µ±ÎÒÃÇ´´½¨¾«ÁéÊ±£¬cocos2dxÒÑ¾­°ïÎÒÃÇ×öºÃÁË»º´æ
+		//æµœå¬ªç–„æ¶“å©ç´è¤°æ’´åœæµ î„€å±å¯¤è™¹ç°¿éå«æ¤‚é”›å®‘ocos2dxå®¸èŒ¬ç²¡ç”¯î†½åœæµ î„€ä»›æ¿‚æˆ’ç°¡ç¼‚æ’³ç“¨
 		note->initWithFile("Note icon/Note_tap.png");
-		//ÃªµãÉèÖÃÓëÉú³ÉÎ»ÖÃ
+		//é–¿æ°±å£ç’å‰§ç–†æ¶“åº£æ•“é´æ„ªç¶…ç¼ƒï¿½
 		note->setAnchorPoint(Vec2(0, 1));
 		note->setPosition(visibleSize.width / 2 - 455 + X * 152, visibleSize.height+15);
-		//Éú³ÉÔÚNote²ã
+		//é¢ç†¸åšé¦âˆŸoteçï¿½
 		auto Note_layer = (LayerColor*)this->getChildByTag(5);
 		Note_layer->addChild(note, 1);
 		note->Note_down();
@@ -542,7 +533,7 @@ void GamePlay::CreateNote(int time)
 	
 	
 	
-	//µİ¹é£¬ÅĞ¶ÏÊÇ·ñÓĞÍ¬Ò»Ê±¼äÉú³ÉµÄÒô·û
+	//é–«æ‘ç¶Šé”›å±½å½é‚î…Ÿæ§¸éšï¸½æ¹éšå±¼ç«´éƒå •æ£¿é¢ç†¸åšé¨å‹¯ç…¶ç»—ï¿½
 	if (!Game_file.empty())
 	{
 		if ((int)(Game_file.front() * 120) == time)
@@ -562,7 +553,7 @@ void GamePlay::GamePre()
 	else {
 		CCLOG("Failed to preload music: %s", filename.c_str());
 	}
-	//¶ÁÈ¡Æ××ÓÎÄ¼ş
+	//è¯»å–è°±å­æ–‡ä»¶
 	auto MusicFile = FileUtils::getInstance();
 	filename = getChartFilePath();
 	auto Musicscore = MusicFile->getStringFromFile(filename);
@@ -572,7 +563,7 @@ void GamePlay::GamePre()
 		Director::getInstance()->popScene();
 		return;
 	}
-	//×Ö·û´®×ª»¯Îªfloat£¬ÈÓ½ølist
+	//å­—ç¬¦ä¸²è½¬åŒ–ä¸ºfloatï¼Œæ‰”è¿›list
 	char Temporary[12] = { 0 };
 	int i, tk;
 	float tpr = 0;
@@ -588,14 +579,14 @@ void GamePlay::GamePre()
 			tk = 0;
 			sscanf(Temporary, "%f", &tpr);
 			Game_file.push_back(tpr);
-			//¼ÆËãÎïÁ¿
+			//ç’ï¼„ç•»é—â•…å™º
 			Play_Toatal++;
 			memset(Temporary, 0, sizeof(Temporary));
 		}
 	}
 	Play_Toatal = Play_Toatal / 4;
 	Play_GetScore = 1000000 / Play_Toatal;
-	/*²âÊÔÓÃ
+	/*å¨´å¬­ç˜¯é¢ï¿½
 	char table[32];
 	auto Timelabel2 = (Label*)this->getChildByTag(2);
 	Timelabel2->setString(table);
@@ -629,7 +620,7 @@ void GamePlay::GameEnd()
 	GameScore->setPosition(Vec2(1130, 650));
 	sprintf(Temporary, "%d", Play_MaxCombo);
 	auto GameMaxCombo = Label::createWithTTF(Temporary, "fonts/Saira-Thin.ttf", 96);
-	//ÒòÎª¿¹¾â³İ»áµ¼ÖÂ×ÖÌåÄ£ºı£¬ËùÒÔ²»µÃ²»Ë«±¶´óĞ¡È»ºóËõĞ¡
+	//é¥çŠ±è´Ÿé¶æ¥…æ•®æ¦»å¤¸ç´°ç€µè‰°åš§ç€›æ¤¾ç¶‹å¦¯ï¼„ç¡¦é”›å±¾å¢æµ ãƒ¤ç¬‰å¯°æ¤¾ç¬‰é™å±½ï¿½å¶…ã‡çå¿•åŠ§éšåº£ç¼‰çï¿½
 	GameMaxCombo->setScale(0.5);
 	GameEnd->addChild(GameMaxCombo, 1);
 	GameMaxCombo->setPosition(Vec2(836, 275));
@@ -657,7 +648,7 @@ void GamePlay::GameEnd()
 	auto GameName = Label::createWithTTF(Filename, "fonts/arial.ttf", 42);
 	GameEnd->addChild(GameName, 1);
 	GameName->setPosition(Vec2(710, 405));
-	// ĞŞ¸ÄÆÀ¼¶ÏÔÊ¾²¿·Ö
+	// ä¿®æ”¹è¯„çº§æ˜¾ç¤ºéƒ¨åˆ†
 	std::string levelText = Diff;
 	if (RecJson.HasMember(Filename.c_str()) &&
 		RecJson[Filename.c_str()].HasMember("Diff") &&
@@ -671,7 +662,7 @@ void GamePlay::GameEnd()
 	GameEnd->addChild(GameDiff, 1);
 	GameDiff->setPosition(Vec2(955, 345));
 
-	//½áËã·ÖÊıµ½ÆÀ¼¶
+	//ç¼æ’¶ç•»é’å—˜æšŸé’æ‹Œç˜ç»¾ï¿½
 	auto GameLevel = Label::createWithTTF(" ", "fonts/Saira-Regular.ttf", 264);
 	std::string Play_level;
 	if (Play_Toatal == Play_Perfect)
@@ -708,7 +699,7 @@ void GamePlay::GameEnd()
 	GameEnd->addChild(GameLevel, 1);
 	GameLevel->setPosition(Vec2(620, 680));
 
-	//½áËãµ½ÎÄ¼ş
+	//ç»“ç®—åˆ°æ–‡ä»¶
 	if (RecJson.HasMember(Filename.c_str())) {
 		if (RecJson[Filename.c_str()].HasMember("Score") &&
 			RecJson[Filename.c_str()]["Score"].HasMember(Diff.c_str())) {
@@ -718,7 +709,7 @@ void GamePlay::GameEnd()
 			}
 		}
 		else {
-			// Èç¹û²»´æÔÚ¶ÔÓ¦µÄÄÑ¶È¼ÇÂ¼£¬´´½¨Ëü
+			// å¦‚æœä¸å­˜åœ¨å¯¹åº”çš„éš¾åº¦è®°å½•ï¼Œåˆ›å»ºå®ƒ
 			if (!RecJson[Filename.c_str()].HasMember("Score")) {
 				rapidjson::Value scoreObj(rapidjson::kObjectType);
 				RecJson[Filename.c_str()].AddMember("Score", scoreObj, RecJson.GetAllocator());
@@ -743,7 +734,7 @@ void GamePlay::GameEnd()
 				RecJson.GetAllocator()
 			);
 
-			// ÕâÀïĞèÒª¸ù¾İÊµ¼ÊÆ×ÃæÄÑ¶ÈÉèÖÃDiffÖµ£¬Äã¿ÉÄÜĞèÒª´ÓÆ×ÃæÎÄ¼şÖĞ¶ÁÈ¡
+			// è¿™é‡Œéœ€è¦æ ¹æ®å®é™…è°±é¢éš¾åº¦è®¾ç½®Diffå€¼ï¼Œä½ å¯èƒ½éœ€è¦ä»è°±é¢æ–‡ä»¶ä¸­è¯»å–
 			int diffValue = 0;
 			if (Diff == "Ez") diffValue = 3;
 			else if (Diff == "Hd") diffValue = 6;
@@ -757,10 +748,10 @@ void GamePlay::GameEnd()
 		}
 	}
 	else {
-		// Èç¹û¸èÇú¼ÇÂ¼²»´æÔÚ£¬´´½¨ÍêÕûµÄ¼ÇÂ¼½á¹¹
+		// å¦‚æœæ­Œæ›²è®°å½•ä¸å­˜åœ¨ï¼Œåˆ›å»ºå®Œæ•´çš„è®°å½•ç»“æ„
 		rapidjson::Value songObj(rapidjson::kObjectType);
 
-		// ´´½¨Score¶ÔÏó
+		// åˆ›å»ºScoreå¯¹è±¡
 		rapidjson::Value scoreObj(rapidjson::kObjectType);
 		scoreObj.AddMember(
 			rapidjson::Value(Diff.c_str(), RecJson.GetAllocator()).Move(),
@@ -768,7 +759,7 @@ void GamePlay::GameEnd()
 			RecJson.GetAllocator()
 		);
 
-		// ´´½¨Level¶ÔÏó
+		// åˆ›å»ºLevelå¯¹è±¡
 		rapidjson::Value levelObj(rapidjson::kObjectType);
 		levelObj.AddMember(
 			rapidjson::Value(Diff.c_str(), RecJson.GetAllocator()).Move(),
@@ -776,7 +767,7 @@ void GamePlay::GameEnd()
 			RecJson.GetAllocator()
 		);
 
-		// ´´½¨Diff¶ÔÏó
+		// åˆ›å»ºDiffå¯¹è±¡
 		rapidjson::Value diffObj(rapidjson::kObjectType);
 		int diffValue = 0;
 		if (Diff == "Ez") diffValue = 3;
@@ -798,7 +789,7 @@ void GamePlay::GameEnd()
 			RecJson.GetAllocator()
 		);
 	}
-	//½«jsonÊı¾İÖØĞÂĞ´ÈëÎÄ¼şÖĞ
+	//çå”ˆsonéç‰ˆåµé–²å¶†æŸŠéæ¬å†é‚å›¦æ¬¢æ¶“ï¿½
 	StringBuffer buffer;
 	rapidjson::Writer<StringBuffer> writer(buffer);
 	RecJson.Accept(writer);
@@ -823,36 +814,36 @@ void GamePlay::GamePause(Ref* pSender)
 	TemperarySprite->runAction(Sequence::create(DelayTime::create(1.0f),
 		CallFunc::create(CC_CALLBACK_0(GamePlay::PauseAfter, this)), NULL));
 
-	/*ÒòÎªnewÒô·ûµÄÔµ¹Ê£¬»áµ¼ÖÂ£º
-		Êı ¾İ Ğ¹ Â¶
+	/*é¥çŠ±è´Ÿnewé—Šå´‡îƒé¨å‹­ç´­éå’ƒç´æµ¼æ°¬î‡±é‘·è¾¾ç´°
+		éï¿½ é¹ï¿½ å¨‰ï¿½ é—‡ï¿½
 
 	auto visibleSize = Director::getInstance()->getVisibleSize();
 	auto renderTexture = RenderTexture::create(visibleSize.width, visibleSize.height);
 	
 	this->pause();
-	renderTexture->begin();            //¿ªÊ¼×¥ÆÁ
-	this->visit(); //±éÀúµ±Ç°³¡¾°SceneµÄÈ«²¿×Ó½ÚµãĞÅÏ¢£¬»­ÈërenderTextureÖĞ
-	renderTexture->end();				//½áÊø×¥ÆÁ
+	renderTexture->begin();            //å¯®ï¿½æ¿®å¬«å§„çï¿½
+	this->visit(); //é–¬å¶…å·»è¤°æ’³å¢ é¦çƒ˜æ«™Sceneé¨å‹«åé–®ã„¥ç“™é‘ºå‚œå£æ·‡â„ƒä¼…é”›å²€æ•¾éî™¸enderTextureæ¶“ï¿½
+	renderTexture->end();				//ç¼æ’´æ½«é¶æ’³ç†
 
 	Scene* scene = GamePause::createScene(renderTexture);
 
-	//ÉÏÃæ·½·¨ĞĞ²»Í¨¾ÍÖ±½Ó½Ø°É
+	//æ¶“å©‡æ½°é‚è§„ç¡¶ç›å±¼ç¬‰é–«æ°¬æ°¨é©å­˜å¸´é´î„æƒ‚
 	//utils::captureScreen(CC_CALLBACK_2(GamePlay::PauseAfter, this), "PauseScreenShot.png");
 
-	Õâ¼¸¸ö·½°¸±»BanÁË
+	æ©æ¬åš‘æ¶“î…æŸŸå¦—å £î¦Banæµœï¿½
 	*/
 }
 
 void GamePlay::PauseAfter()
 {
-	//Ç°³µÖ®¼ø£¬Õâ»ØºÜÄÑÄÚ´æĞ¹Â©
+	//é“å¶ˆæº…æ¶”å¬®å£Œé”›å²ƒç¹–é¥ç‚²ç·¢é—…æƒ§å”´ç€›æ¨»ç¡ å©•ï¿½
 	auto visibleSize = Director::getInstance()->getVisibleSize();
 	auto renderTexture = RenderTexture::create(visibleSize.width, visibleSize.height);
 
 	this->pause();
-	renderTexture->begin();            //¿ªÊ¼×¥ÆÁ
-	this->visit(); //±éÀúµ±Ç°³¡¾°SceneµÄÈ«²¿×Ó½ÚµãĞÅÏ¢£¬»­ÈërenderTextureÖĞ
-	renderTexture->end();				//½áÊø×¥ÆÁ
+	renderTexture->begin();            //å¯®ï¿½æ¿®å¬«å§„çï¿½
+	this->visit(); //é–¬å¶…å·»è¤°æ’³å¢ é¦çƒ˜æ«™Sceneé¨å‹«åé–®ã„¥ç“™é‘ºå‚œå£æ·‡â„ƒä¼…é”›å²€æ•¾éî™¸enderTextureæ¶“ï¿½
+	renderTexture->end();				//ç¼æ’´æ½«é¶æ’³ç†
 
 	Scene* scene = GamePause::createScene(renderTexture);
 	Director::getInstance()->pushScene(TransitionCrossFade::create(0.5, scene));
@@ -866,3 +857,9 @@ void GamePlay::backmeun(Ref* pSender)
 	SimpleAudioEngine::getInstance()->stopBackgroundMusic(true);
 	Director::getInstance()->popScene();
 }
+
+bool GamePlay::isKeyPressed(EventKeyboard::KeyCode keyCode) {
+    return KeyConfig::isKeyPressed(keyCode);
+}//Bound keys
+
+
