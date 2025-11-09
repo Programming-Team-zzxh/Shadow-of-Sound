@@ -82,7 +82,7 @@ bool MenuPick_Custom::init()
     this->addChild(BackGround, 2, 2);
 
     // 默认难度选择
-    auto Pick_diff = Sprite::create("Cover/In2.png");
+    auto Pick_diff = Sprite::create("Cover/Hd2.png");
     this->addChild(Pick_diff, 4, 3);
     Pick_diff->setPosition(BackGround->getPosition() + Vec2(110, -25));
 
@@ -189,8 +189,20 @@ bool MenuPick_Custom::init()
         Vec2 pos = container->getPosition();
         pos.y += deltaY;
 
-        float minY = -400.0f;
-        float maxY = 400.0f;
+        // 动态计算滚动范围
+        int songCount = songList.size();
+        float minY = -400.0f; // 基础下限
+        float maxY = 400.0f;  // 基础上限
+
+        // 根据歌曲数量调整滚动范围
+        if (songCount > 8) { // 如果歌曲超过8首，增加滚动范围
+            float extraSongs = songCount - 8;
+            // 每多1首歌增加100的滚动范围
+            float extraRange = extraSongs * 100.0f;
+            minY = -100.0f;
+            maxY = 400.0f + extraRange;
+        }
+
         pos.y = clampf(pos.y, minY, maxY);
 
         container->setPosition(pos);

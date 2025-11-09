@@ -37,7 +37,7 @@ public:
     void gameplay(Ref* pSender);
 
 private:
-    int Pick_diff=3;// 当前难度 (1=Ez, 2=Hd, 3=In)
+    int Pick_diff=2;// 当前难度 (1=Ez, 2=Hd, 3=In)
     int js_exist = 1;
     std::string music_name; // 当前选中的歌曲名
     rapidjson::Document RecJson; // JSON文档
