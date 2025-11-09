@@ -24,6 +24,9 @@ bool MenuPick_3::init()
 	}
 
 	auto visibleSize = Director::getInstance()->getVisibleSize();
+	// 创建一个容器节点，承载所有选歌相关元素（按钮 + 箭头）
+	auto songContainer = Node::create();
+	this->addChild(songContainer, 1, 100); // tag = 100
 
 	//读取Json文件
 	std::string Rec = FileUtils::getInstance()->getStringFromFile("Record/GameRecord.json");
@@ -97,7 +100,7 @@ bool MenuPick_3::init()
 	MenuPick4->setPosition(Vec2(300, 600));
 	MenuPick5->setPosition(Vec2(300, 500));
 	MenuPick6->setPosition(Vec2(300, 400));
-	this->addChild(Menu, 1, 1);
+	songContainer->addChild(Menu, 1, 1);
 
 	/*歌曲的背景
 	auto BackGround = Sprite::create("Cover/BackGround.png");
@@ -175,10 +178,10 @@ bool MenuPick_3::init()
 	this->addChild(PickSprite1, 3, 7);
 
 	//箭头
-	auto Pick_Arrow = Sprite::create("Cover/Arrow.png");
-	this->addChild(Pick_Arrow, 3, 8);
-	Pick_Arrow->setAnchorPoint(Vec2(0, 0.5));
-	Pick_Arrow->setPosition(MenuPick1->getPosition() + Vec2(215, 0));
+auto Pick_Arrow = Sprite::create("Cover/Arrow.png");
+Pick_Arrow->setAnchorPoint(Vec2(0, 0.5));
+Pick_Arrow->setPosition(MenuPick1->getPosition() + Vec2(215, 0));
+songContainer->addChild(Pick_Arrow, 2, 8);
 
 	//进入按钮,独立于其他菜单项
 	auto Enter = MenuItemImage::create("Cover/Enter.png", "Cover/Enter2.png", "Cover/Enter.png",
@@ -211,13 +214,45 @@ bool MenuPick_3::init()
 	};
 	_eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
 
+	//鼠标滚轮事件监听
+	auto scrollListener = EventListenerMouse::create();
+	scrollListener->onMouseScroll = [=](Event* event) {
+		EventMouse* e = (EventMouse*)event;
+		float scrollY = e->getScrollY();
+
+		//只在屏幕左四分之一区域滚动
+		Vec2 mousePos = e->getLocationInView();
+		auto visibleSize = Director::getInstance()->getVisibleSize();
+
+		if (mousePos.x > visibleSize.width / 4)
+			return;  // 鼠标不在选歌区域，不滚动
+
+		auto container = this->getChildByTag(100);  // 容器节点
+		if (!container) return;
+
+		float scrollSpeed = 40.0f;
+		float deltaY = scrollY * scrollSpeed;
+
+		Vec2 pos = container->getPosition();
+		pos.y += deltaY;
+
+		// 限制滚动范围（边界防溢出）
+		float minY = -400.0f;
+		float maxY = 400.0f;
+		pos.y = clampf(pos.y, minY, maxY);
+
+		container->setPosition(pos);
+		};
+	_eventDispatcher->addEventListenerWithSceneGraphPriority(scrollListener, this);
+
 	return true;
 }
 
 void MenuPick_3::pickmusic(int pick)
 {
 	auto visibleSize = Director::getInstance()->getVisibleSize();
-	auto pickarrow = (Sprite*)this->getChildByTag(8);
+	auto container = this->getChildByTag(100);
+	auto pickarrow = (Sprite*)container->getChildByTag(8);
 	this->getChildByTag(7)->removeFromParentAndCleanup(true);
 
 	if (pick == 1)
