@@ -155,28 +155,3 @@ cocos学习笔记：https://blog.51cto.com/shahdza/category2/p_3
 
 #### 我的bilibili账号：神渣冬小狼：https://space.bilibili.com/176859859?spm_id_from=333.1007.0.0
 
-
-### 更新日志
-曾飞宇：
-
-10.27 
-
-      添加在游戏内出现perfect good bad miss 的资源图像
-      
-      对perfect判定机制进行完善，增加游戏内perfect图标的显示效果
-      
-11.3  
-
-      对good判定机制范围进行完善，增加游戏内good图标的显示效果
-      
-      对miss判定机制范围进行完善，增加游戏内miss图标的显示效果
-      
-      增添bad判定并且对miss的判定范围进行合理调整，增加游戏内bad图标的显示效果
-
-      完善hold音符的各大判定，使得每一个音符都有相应的判定图标显示，同时避免游戏内闪退问题
-
-张瑞翔：
-
-徐子杰：
-
-黄卓航：
